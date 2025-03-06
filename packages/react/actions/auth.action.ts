@@ -28,22 +28,34 @@ const initAuthActions = (store: MonoriseStore, authService: AuthService) => {
   };
 
   const getProfile = async () => {
-    const {
-      data: { displayName, email, accountId, ...rest },
-    } = await authService.getSessionProfile();
+    try {
+      const {
+        data: { displayName, email, accountId, ...rest },
+      } = await authService.getSessionProfile();
 
-    store.setState(
-      produce((state) => {
-        state.auth.profile = {
-          displayName,
-          email,
-          accountId,
-          ...rest,
-        };
-      }),
-      undefined,
-      'mr/auth/get-profile',
-    );
+      store.setState(
+        produce((state) => {
+          state.auth.isUnauthorized = false;
+          state.auth.profile = {
+            displayName,
+            email,
+            accountId,
+            ...rest,
+          };
+        }),
+        undefined,
+        'mr/auth/get-profile',
+      );
+    } catch (err) {
+      store.setState(
+        produce((state) => {
+          state.auth.isUnauthorized = true;
+          state.auth.profile = {};
+        }),
+        undefined,
+        'mr/auth/get-profile',
+      );
+    }
   };
 
   const useIsUnauthorized = () => {
