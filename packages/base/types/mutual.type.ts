@@ -1,11 +1,11 @@
-import { Entity, type EntitySchemaMap } from './monorise.type';
+import type { Entity, EntitySchemaMap } from './monorise.type';
 
 type MutualDataWithIndex = {
   index: number;
 };
 
-interface MutualDataMapping {
-};
+// biome-ignore lint/suspicious/noEmptyInterface: To be extended via declare module
+interface MutualDataMapping {}
 
 type MutualData<
   B extends Entity,

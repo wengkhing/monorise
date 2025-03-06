@@ -1,5 +1,7 @@
+import type { Entity, MonoriseEntityConfig } from '@monorise/base';
 import { initAppActions } from './actions/app.action';
 import { initAuthActions } from './actions/auth.action';
+import { initConfigActions } from './actions/config.action';
 import { initCoreActions } from './actions/core.action';
 import { initAxiosInterceptor, injectAxiosInterceptor } from './lib/api';
 import initAuthService from './services/auth.service';
@@ -14,17 +16,19 @@ type Options<T extends Record<string, React.ComponentType<any>>> = {
   mutualBaseUrl?: string;
   tagBaseUrl?: string;
   modals?: T;
+  entityConfig: Record<Entity, MonoriseEntityConfig>;
 };
 
-const initMonorise = async () => {
+const initMonorise = () => {
   const { monoriseStore: store, setOptions: setMonoriseOptions } =
-    await initMonoriseStore();
+    initMonoriseStore();
   const appActions = initAppActions(store);
+  const configActions = initConfigActions(store);
   const axios = initAxiosInterceptor(store, appActions);
 
   const authService = initAuthService(axios);
   const filestoreService = initFilestoreService(axios);
-  const coreService = initCoreService(axios);
+  const coreService = initCoreService(store, axios);
 
   const authActions = initAuthActions(store, authService);
   const coreActions = initCoreActions(store, appActions, coreService);
@@ -37,6 +41,7 @@ const initMonorise = async () => {
     setMonoriseOptions({
       modals: opts.modals,
     });
+    configActions.setConfig(opts.entityConfig);
     authService.setOptions({
       apiBaseUrl: opts.authBaseUrl,
     });
@@ -57,13 +62,14 @@ const initMonorise = async () => {
     authService,
     filestoreService,
     coreService,
+    ...configActions,
     ...appActions,
     ...authActions,
     ...coreActions,
   };
 };
 
-const Monorise = await initMonorise();
+const Monorise = initMonorise();
 
 const {
   store,
@@ -71,6 +77,9 @@ const {
   authService,
   filestoreService,
   coreService,
+  setConfig,
+  getConfig,
+  useConfig,
   startLoading,
   endLoading,
   setError,
@@ -111,6 +120,9 @@ export {
   authService,
   filestoreService,
   coreService,
+  setConfig,
+  getConfig,
+  useConfig,
   startLoading,
   endLoading,
   setError,
@@ -144,3 +156,5 @@ export {
   useMutuals,
   useEntityState,
 };
+
+export default Monorise;

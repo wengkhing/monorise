@@ -6,7 +6,7 @@ import type {
   MutualData,
 } from '@monorise/base';
 import type { AxiosRequestConfig } from 'axios';
-import { getEntityConfig } from '../lib/config';
+import type { MonoriseStore } from '../store/monorise.store';
 import type { AxiosInterceptor } from '../types/api.type';
 
 const ENTITY_API_BASE_URL = '/api/core/entity';
@@ -44,7 +44,11 @@ export type CommonOptions = Partial<AxiosRequestConfig> & {
   };
 };
 
-const initCoreService = (axios: AxiosInterceptor, opts?: ConfigOptions) => {
+const initCoreService = (
+  monoriseStore: MonoriseStore,
+  axios: AxiosInterceptor,
+  opts?: ConfigOptions,
+) => {
   let options: ConfigOptions = opts || {};
 
   const listEntities = <T extends Entity>(
@@ -118,13 +122,13 @@ const initCoreService = (axios: AxiosInterceptor, opts?: ConfigOptions) => {
     );
   };
 
-  const createEntity = async <T extends Entity>(
+  const createEntity = <T extends Entity>(
     entityType: T,
     values: DraftEntity<T>,
     opts: CommonOptions = {},
   ) => {
     const { entityApiBaseUrl = ENTITY_API_BASE_URL } = options;
-    const entityConfig = await getEntityConfig();
+    const entityConfig = monoriseStore.getState().config;
     return axios.post<CreatedEntity<T>>(
       opts.customUrl || `${entityApiBaseUrl}/${entityType}`,
       values,
@@ -140,14 +144,14 @@ const initCoreService = (axios: AxiosInterceptor, opts?: ConfigOptions) => {
     );
   };
 
-  const upsertEntity = async <T extends Entity>(
+  const upsertEntity = <T extends Entity>(
     entityType: T,
     id: string,
     values: DraftEntity<T>,
     opts: CommonOptions = {},
   ) => {
     const { entityApiBaseUrl = ENTITY_API_BASE_URL } = options;
-    const entityConfig = await getEntityConfig();
+    const entityConfig = monoriseStore.getState().config;
     return axios.put<CreatedEntity<T>>(
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       values,
@@ -163,14 +167,14 @@ const initCoreService = (axios: AxiosInterceptor, opts?: ConfigOptions) => {
     );
   };
 
-  const editEntity = async <T extends Entity>(
+  const editEntity = <T extends Entity>(
     entityType: T,
     id: string,
     values: Partial<DraftEntity<T>>,
     opts: CommonOptions = {},
   ) => {
     const { entityApiBaseUrl = ENTITY_API_BASE_URL } = options;
-    const entityConfig = await getEntityConfig();
+    const entityConfig = monoriseStore.getState().config;
     return axios.patch<CreatedEntity<T>>(
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       values,
@@ -186,13 +190,13 @@ const initCoreService = (axios: AxiosInterceptor, opts?: ConfigOptions) => {
     );
   };
 
-  const deleteEntity = async <T extends Entity>(
+  const deleteEntity = <T extends Entity>(
     entityType: T,
     id: string,
     opts: CommonOptions = {},
   ) => {
     const { entityApiBaseUrl = ENTITY_API_BASE_URL } = options;
-    const entityConfig = await getEntityConfig();
+    const entityConfig = monoriseStore.getState().config;
     return axios.delete(
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       {

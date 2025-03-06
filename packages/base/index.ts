@@ -3,7 +3,7 @@ import {
   DraftEntity,
   Entity,
   EntitySchemaMap,
-  MonoriseConfig,
+  MonoriseEntityConfig,
 } from './types/monorise.type';
 
 import {
@@ -18,7 +18,7 @@ export {
   EntitySchemaMap,
   DraftEntity,
   CreatedEntity,
-  MonoriseConfig,
+  MonoriseEntityConfig,
   MutualDataWithIndex,
   MutualDataMapping,
   MutualData,

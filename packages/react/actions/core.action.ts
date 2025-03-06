@@ -8,7 +8,6 @@ import type {
 } from '@monorise/base';
 import { produce } from 'immer';
 import { useEffect, useState } from 'react';
-import { getEntityConfig } from '../lib/config';
 import {
   byEntityId,
   constructLocal,
@@ -575,12 +574,12 @@ const initCoreActions = (
     );
   };
 
-  const deleteLocalMutualsByEntity = async <T extends Entity>(
+  const deleteLocalMutualsByEntity = <T extends Entity>(
     entityType: T,
     id: string,
   ) => {
-    const entityConfig = (await getEntityConfig()) as Entity[];
     const store = monoriseStore.getState();
+    const entityConfig = store.config;
     let mutuals: Mutual[] = [];
     for (const i of Object.keys(entityConfig)) {
       const mutualState = store.mutual[`${entityType}/${id}/${i}`];

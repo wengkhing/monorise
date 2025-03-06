@@ -1,9 +1,13 @@
-import type { CreatedEntity, Entity, Mutual } from '@monorise/base';
+import type {
+  CreatedEntity,
+  Entity,
+  MonoriseEntityConfig,
+  Mutual,
+} from '@monorise/base';
 import { enableMapSet } from 'immer';
 import type React from 'react';
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { getEntityConfig } from '../lib/config';
 import type { ApplicationRequestError, ModalProps } from '../types/api.type';
 import type { CommonStore } from '../types/monorise.type';
 
@@ -24,21 +28,9 @@ type Options = {
   modals?: Record<string, React.ComponentType<unknown>>;
 };
 
-const initMonoriseStore = async () => {
+const initMonoriseStore = () => {
   let options: Options = {};
   const { modals = {} } = options;
-
-  const entityMaps = (Object.keys(await getEntityConfig()) as string[]).reduce(
-    (acc, entity) => {
-      acc[entity as any] = {
-        dataMap: new Map<string, CreatedEntity<Entity>>(),
-        isFirstFetched: false,
-        lastKey: '',
-      } as CommonStore<CreatedEntity<Entity>>;
-      return acc;
-    },
-    {} as Record<Entity, CommonStore<CreatedEntity<Entity>>>,
-  );
 
   type AppModalProps = ModalProps<typeof modals>;
 
@@ -56,6 +48,7 @@ const initMonoriseStore = async () => {
             context?: AppModalProps[keyof AppModalProps];
           };
         };
+        config: Record<Entity, MonoriseEntityConfig>;
         entity: Record<Entity, CommonStore<CreatedEntity<Entity>>>;
         mutual: Record<string, CommonStore<Mutual>>;
         tag: Record<string, CommonStore<CreatedEntity<Entity>>>;
@@ -78,7 +71,8 @@ const initMonoriseStore = async () => {
             name: null,
           },
         },
-        entity: entityMaps,
+        config: {},
+        entity: {},
         mutual: {},
         tag: {},
         auth: {
