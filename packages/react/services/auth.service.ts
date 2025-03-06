@@ -40,6 +40,11 @@ const initAuthService = (axios: AxiosInterceptor) => {
       requestKey: 'auth/session',
     });
 
+  const logout = () =>
+    axios.get('/logout', {
+      requestKey: 'auth/logout',
+    });
+
   const setOptions = (opts: Options) => {
     options = {
       ...options,
@@ -50,6 +55,7 @@ const initAuthService = (axios: AxiosInterceptor) => {
   return {
     requestLoginMagicLink,
     getSessionProfile,
+    logout,
     setOptions,
   };
 };

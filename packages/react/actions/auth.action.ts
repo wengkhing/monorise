@@ -69,12 +69,23 @@ const initAuthActions = (store: MonoriseStore, authService: AuthService) => {
       }),
     );
 
+  const logout = () => {
+    authService.logout();
+    store.setState(
+      produce((state) => {
+        state.auth.isUnauthorized = true;
+        state.auth.profile = {};
+      }),
+    );
+  };
+
   return {
     requestLogin,
     useProfile,
     getProfile,
     useIsUnauthorized,
     setIsUnauthorized,
+    logout,
   };
 };
 
