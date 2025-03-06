@@ -4,6 +4,7 @@ import request, {
   type AxiosRequestConfig,
   type AxiosResponse,
 } from 'axios';
+import { Fragment } from 'react';
 import { toast } from 'sonner';
 import type { AppActions } from '../actions/app.action';
 import type { AuthActions } from '../actions/auth.action';
@@ -104,10 +105,10 @@ const injectAxiosInterceptor = (
           break;
         case 'string':
           toast(
-            <>
+            <Fragment>
               <IconCircleCheckFilled color='rgb(34 197 94)' />
               {feedback.success}
-            </>,
+            </Fragment>,
           );
           break;
         case 'boolean':
