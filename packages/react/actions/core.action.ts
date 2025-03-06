@@ -521,6 +521,47 @@ const initCoreActions = (
     );
   };
 
+  const editMutual = async <B extends Entity, T extends Entity>(
+    byEntityType: B,
+    entityType: T,
+    byEntityId: string,
+    entityId: string,
+    payload: MutualData<B, T> | Record<string, any> = {},
+    opts: CommonOptions = {},
+  ) => {
+    const mutualService = makeMutualService(byEntityType, entityType);
+    const { data: mutual } = await mutualService.editMutual(
+      byEntityId,
+      entityId,
+      payload,
+      opts,
+    );
+
+    monoriseStore.setState(
+      produce((state) => {
+        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
+        const side = `${entityType}/${entityId}/${byEntityType}`;
+
+        state.mutual[bySide].dataMap = new Map(
+          state.mutual[bySide]?.dataMap,
+        ).set(mutual.entityId, mutual);
+
+        if (!state.mutual[side]) {
+          state.mutual[side] = {
+            dataMap: new Map(),
+          };
+        }
+
+        state.mutual[side].dataMap = new Map(state.mutual[side]?.dataMap).set(
+          mutual.byEntityId,
+          flipMutual(mutual),
+        );
+      }),
+      undefined,
+      `mr/mutual/edit/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+    );
+  };
+
   const deleteMutual = async <B extends Entity, T extends Entity>(
     byEntityType: B,
     entityType: T,
@@ -865,6 +906,7 @@ const initCoreActions = (
     updateLocalEntity,
     createMutual,
     upsertLocalMutual,
+    editMutual,
     deleteMutual,
     deleteLocalMutual,
     useEntity,
