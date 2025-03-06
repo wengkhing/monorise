@@ -622,7 +622,9 @@ const initCoreActions = (
     error?: ApplicationRequestError;
     requestKey: string;
   } => {
-    const dataMap = monoriseStore((state) => state.entity[entityType].dataMap);
+    const dataMap = monoriseStore(
+      (state) => state.entity[entityType]?.dataMap || new Map(),
+    );
     const requestKey = `entity/${entityType}/get/${id}`;
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
@@ -666,7 +668,9 @@ const initCoreActions = (
     const isListing = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
     const state = monoriseStore((state) => state.entity[entityType]);
-    const { dataMap, searchResults, isFirstFetched } = state;
+    const { dataMap, searchResults, isFirstFetched } = state ?? {
+      dataMap: new Map(),
+    };
     const [entities, setEntities] = useState<CreatedEntity<T>[]>();
     const [query, setQuery] = useState<string>('');
     const [skRange, setBetween] = useState(params.skRange);
