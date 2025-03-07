@@ -1,11 +1,8 @@
-import { IconCircleCheckFilled } from '@tabler/icons-react';
 import request, {
   type AxiosError,
   type AxiosRequestConfig,
   type AxiosResponse,
 } from 'axios';
-import { Fragment } from 'react';
-import { toast } from 'sonner';
 import type { AppActions } from '../actions/app.action';
 import type { AuthActions } from '../actions/auth.action';
 import type { MonoriseStore } from '../store/monorise.store';
@@ -76,11 +73,23 @@ const initAxiosInterceptor = (store: MonoriseStore, appActions: AppActions) => {
   return axios;
 };
 
+type ConfigOptions = {
+  onApiSuccess?: <T>(
+    response: AxiosResponse<T>,
+    feedbackSuccess:
+      | ((data: AxiosResponse<T>['data']) => React.ReactNode)
+      | string
+      | boolean,
+  ) => void;
+};
+
 const injectAxiosInterceptor = (
   appActions: AppActions,
   authActions: AuthActions,
   axios: ReturnType<typeof initAxiosInterceptor>,
+  opts?: ConfigOptions,
 ) => {
+  let options: ConfigOptions = opts || {};
   const { endLoading, setError, clearError } = appActions;
   const { setIsUnauthorized } = authActions;
 
@@ -95,26 +104,25 @@ const injectAxiosInterceptor = (
       endLoading({ requestKey, isInterruptive });
       clearError(requestKey);
 
-      if (!feedback?.success) {
-        return Promise.resolve(response);
+      if (feedback?.success) {
+        options.onApiSuccess?.(response, feedback.success);
       }
-
-      switch (typeof feedback.success) {
-        case 'function':
-          toast(feedback.success(response.data));
-          break;
-        case 'string':
-          toast(
-            <Fragment>
-              <IconCircleCheckFilled color='rgb(34 197 94)' />
-              {feedback.success}
-            </Fragment>,
-          );
-          break;
-        case 'boolean':
-          toast('Request success');
-          break;
-      }
+      // switch (typeof feedback.success) {
+      //   case 'function':
+      //     toast(feedback.success(response.data));
+      //     break;
+      //   case 'string':
+      //     toast(
+      //       <Fragment>
+      //         <IconCircleCheckFilled color='rgb(34 197 94)' />
+      //         {feedback.success}
+      //       </Fragment>,
+      //     );
+      //     break;
+      //   case 'boolean':
+      //     toast('Request success');
+      //     break;
+      // }
 
       return Promise.resolve(response);
     },
@@ -128,6 +136,15 @@ const injectAxiosInterceptor = (
       return Promise.reject(error);
     },
   );
+
+  const setOptions = (opts: ConfigOptions) => {
+    options = {
+      ...options,
+      ...opts,
+    };
+  };
+
+  return { setOptions };
 };
 
 export { initAxiosInterceptor, injectAxiosInterceptor };

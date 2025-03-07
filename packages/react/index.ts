@@ -1,4 +1,5 @@
 import type { Entity, MonoriseEntityConfig } from '@monorise/base';
+import type { AxiosResponse } from 'axios';
 import { initAppActions } from './actions/app.action';
 import { initAuthActions } from './actions/auth.action';
 import { initConfigActions } from './actions/config.action';
@@ -23,6 +24,13 @@ type Options<T extends Record<string, React.ComponentType<any>>> = {
   tagBaseUrl?: string;
   modals?: T;
   entityConfig: Record<Entity, MonoriseEntityConfig>;
+  onApiSuccess?: <T>(
+    response: AxiosResponse<T>,
+    feedbackSuccess:
+      | ((data: AxiosResponse<T>['data']) => React.ReactNode)
+      | string
+      | boolean,
+  ) => void;
 };
 
 const initMonorise = () => {
@@ -39,7 +47,11 @@ const initMonorise = () => {
   const authActions = initAuthActions(store, authService);
   const coreActions = initCoreActions(store, appActions, coreService);
 
-  injectAxiosInterceptor(appActions, authActions, axios);
+  const axiosInterceptor = injectAxiosInterceptor(
+    appActions,
+    authActions,
+    axios,
+  );
 
   const config = <T extends Record<string, React.ComponentType<any>>>(
     opts: Options<T>,
@@ -58,6 +70,9 @@ const initMonorise = () => {
       entityApiBaseUrl: opts.entityBaseUrl,
       mutualApiBaseUrl: opts.mutualBaseUrl,
       tagApiBaseUrl: opts.tagBaseUrl,
+    });
+    axiosInterceptor.setOptions({
+      onApiSuccess: opts.onApiSuccess,
     });
   };
 
