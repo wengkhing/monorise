@@ -2,7 +2,6 @@ import type {
   CreatedEntity,
   Entity,
   MonoriseEntityConfig,
-  Mutual,
 } from '@monorise/base';
 import { enableMapSet } from 'immer';
 import type React from 'react';
@@ -10,6 +9,7 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ApplicationRequestError, ModalProps } from '../types/api.type';
 import type { CommonStore } from '../types/monorise.type';
+import type { Mutual } from '../types/mutual.type';
 
 enableMapSet();
 

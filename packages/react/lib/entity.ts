@@ -1,10 +1,5 @@
-import type {
-  CreatedEntity,
-  Entity,
-  EntitySchemaMap,
-  Mutual,
-  MutualData,
-} from '@monorise/base';
+import type { CreatedEntity, Entity, EntitySchemaMap } from '@monorise/base';
+import type { Mutual, MutualData } from '../types/mutual.type';
 
 export const constructLocal = (
   entityType: Entity,

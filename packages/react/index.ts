@@ -8,6 +8,12 @@ import initAuthService from './services/auth.service';
 import initCoreService from './services/core.service';
 import initFilestoreService from './services/filestore.service';
 import { initMonoriseStore } from './store/monorise.store';
+import {
+  Mutual,
+  MutualData,
+  MutualDataMapping,
+  MutualDataWithIndex,
+} from './types/mutual.type';
 
 type Options<T extends Record<string, React.ComponentType<any>>> = {
   authBaseUrl?: string;
@@ -162,3 +168,12 @@ export {
 };
 
 export default Monorise;
+
+export { MutualDataWithIndex, MutualDataMapping, MutualData, Mutual };
+
+export type {
+  CreatedEntity,
+  DraftEntity,
+  Entity,
+  EntitySchemaMap,
+} from '@monorise/base';

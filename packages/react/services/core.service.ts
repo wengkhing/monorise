@@ -1,13 +1,8 @@
-import type {
-  CreatedEntity,
-  DraftEntity,
-  Entity,
-  Mutual,
-  MutualData,
-} from '@monorise/base';
+import type { CreatedEntity, DraftEntity, Entity } from '@monorise/base';
 import type { AxiosRequestConfig } from 'axios';
 import type { MonoriseStore } from '../store/monorise.store';
 import type { AxiosInterceptor } from '../types/api.type';
+import type { Mutual, MutualData } from '../types/mutual.type';
 
 const ENTITY_API_BASE_URL = '/api/core/entity';
 const MUTUAL_API_BASE_URL = '/api/core/mutual';

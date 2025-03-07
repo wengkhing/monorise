@@ -3,8 +3,6 @@ import type {
   DraftEntity,
   Entity,
   EntitySchemaMap,
-  Mutual,
-  MutualData,
 } from '@monorise/base';
 import { produce } from 'immer';
 import { useEffect, useState } from 'react';
@@ -23,6 +21,7 @@ import type {
 import type { MonoriseStore } from '../store/monorise.store';
 import type { ApplicationRequestError } from '../types/api.type';
 import type { CommonStore } from '../types/monorise.type';
+import type { Mutual, MutualData } from '../types/mutual.type';
 import type { AppActions } from './app.action';
 
 // ===== Important tips ======
