@@ -1,0 +1,22 @@
+{
+  "name": "@monorise/cli",
+  "version": "1.0.3",
+  "description": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "monorise": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.19.3",
+    "zod": "^3.24.2"
+  }
+}
