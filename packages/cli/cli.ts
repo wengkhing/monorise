@@ -71,10 +71,8 @@ export enum Entity {}
     // Generate import and array element
     const fileName = file.replace(/\.ts$/, '');
     const variableName = kebabToCamel(fileName);
-    imports.push(`import ${variableName} from '${configDir}/${fileName}';`);
-    importTypes.push(
-      `import type ${variableName} from '${configDir}/${fileName}';`,
-    );
+    imports.push(`import ${variableName} from './${fileName}';`);
+    importTypes.push(`import type ${variableName} from './${fileName}';`);
     arrayElements.push(variableName);
 
     // Generate enum entry
