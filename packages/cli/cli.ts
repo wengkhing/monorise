@@ -6,14 +6,31 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 async function main() {
-  const configDir = path.resolve('./shared/configs/monorise');
+  // Check for monorise.config.ts or monorise.config.js
+  const configFilePathTS = path.resolve('./monorise.config.ts');
+  const configFilePathJS = path.resolve('./monorise.config.js');
+
+  let configFilePath: string;
+  if (fs.existsSync(configFilePathTS)) {
+    configFilePath = configFilePathTS;
+  } else if (fs.existsSync(configFilePathJS)) {
+    configFilePath = configFilePathJS;
+  } else {
+    throw new Error(
+      'Neither monorise.config.ts nor monorise.config.js found in the root of the project.',
+    );
+  }
+
+  // Dynamically import the config file
+  const monoriseConfig = await import(configFilePath);
+  const configDir = path.resolve(monoriseConfig.default.configDir);
 
   const configOutputPath = path.join(configDir, 'index.ts');
   const initialOutputContent = `
 export enum Entity {}
 `;
 
-  // clean up and initialize index.ts file, so that tsconfig resolves import correctly
+  // Clean up and initialize index.ts file, so that tsconfig resolves import correctly
   fs.writeFileSync(configOutputPath, initialOutputContent);
 
   const files = fs
@@ -54,11 +71,9 @@ export enum Entity {}
     // Generate import and array element
     const fileName = file.replace(/\.ts$/, '');
     const variableName = kebabToCamel(fileName);
-    imports.push(
-      `import ${variableName} from '#/shared/configs/monorise/${fileName}';`,
-    );
+    imports.push(`import ${variableName} from '${configDir}/${fileName}';`);
     importTypes.push(
-      `import type ${variableName} from '#/shared/configs/monorise/${fileName}';`,
+      `import type ${variableName} from '${configDir}/${fileName}';`,
     );
     arrayElements.push(variableName);
 
@@ -72,7 +87,7 @@ export enum Entity {}
       `${kebabToCamel(config.name)}: ${kebabToPascal(config.name)}Type;`,
     );
 
-    // Generate config enty
+    // Generate config entry
     configEntries.push(`[Entity.${enumKey}]: ${kebabToCamel(config.name)},`);
     schemaEntries.push(
       `[Entity.${enumKey}]: ${kebabToCamel(config.name)}.finalSchema,`,
