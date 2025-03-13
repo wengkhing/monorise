@@ -442,6 +442,12 @@ const initCoreActions = (
         const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
         const side = `${entityType}/${entityId}/${byEntityType}`;
 
+        if (!state.mutual[bySide]) {
+          state.mutual[bySide] = {
+            dataMap: new Map(),
+          };
+        }
+
         state.mutual[bySide].dataMap = new Map(
           state.mutual[bySide]?.dataMap,
         ).set(mutual.entityId, mutual);
@@ -500,6 +506,12 @@ const initCoreActions = (
         const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
         const side = `${entityType}/${entityId}/${byEntityType}`;
 
+        if (!state.mutual[bySide]) {
+          state.mutual[bySide] = {
+            dataMap: new Map(),
+          };
+        }
+
         state.mutual[bySide].dataMap = new Map(
           state.mutual[bySide]?.dataMap,
         ).set(entityId, mutual);
@@ -540,6 +552,12 @@ const initCoreActions = (
       produce((state) => {
         const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
         const side = `${entityType}/${entityId}/${byEntityType}`;
+
+        if (!state.mutual[bySide]) {
+          state.mutual[bySide] = {
+            dataMap: new Map(),
+          };
+        }
 
         state.mutual[bySide].dataMap = new Map(
           state.mutual[bySide]?.dataMap,
