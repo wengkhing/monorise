@@ -154,12 +154,16 @@ const initCoreActions = (
   ) => {
     const tagKey = `${entityType}/${tagName}/${opts.params?.group || ''}`;
 
-    const store = monoriseStore.getState();
-    const tagState = store.tag[tagKey] || {};
+    const state = monoriseStore.getState();
+    const tagState = state.tag[tagKey] || {};
     const { isFirstFetched, dataMap } = tagState;
     const entityService = makeEntityService(entityType);
+    const { forceFetch } = opts;
+    const requestKey = `tag/${entityType}/${tagName}/${opts.params?.group || ''}/list`;
+    const isLoading = checkIsLoading(requestKey);
+    const error = getError(requestKey);
 
-    if (isFirstFetched) {
+    if (!forceFetch && (isFirstFetched || isLoading || error)) {
       return;
     }
 
@@ -183,6 +187,8 @@ const initCoreActions = (
         };
       }),
     );
+
+    return data;
   };
   const getEntity = async <T extends Entity>(
     entityType: T,
@@ -197,9 +203,10 @@ const initCoreActions = (
     const requestKey = `entity/${entityType}/get/${id}`;
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
+    const { forceFetch } = opts;
 
-    if (entity || isLoading || error) {
-      return;
+    if (!forceFetch && (entity || isLoading || error)) {
+      return entity;
     }
 
     ({ data: entity } = await entityService.getEntity(id, opts));
@@ -211,6 +218,8 @@ const initCoreActions = (
       undefined,
       `mr/entity/get/${entityType}/${id}`,
     );
+
+    return entity;
   };
 
   const createEntity = async <T extends Entity>(
@@ -301,8 +310,9 @@ const initCoreActions = (
     const requestKey = `mutual/${selfKey}/list`;
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
+    const { forceFetch } = opts;
 
-    if (isFirstFetched || isLoading || error) {
+    if (!forceFetch && (isFirstFetched || isLoading || error)) {
       return;
     }
 
@@ -435,6 +445,54 @@ const initCoreActions = (
       entityId,
       payload,
       opts,
+    );
+
+    monoriseStore.setState(
+      produce((state) => {
+        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
+        const side = `${entityType}/${entityId}/${byEntityType}`;
+
+        if (!state.mutual[bySide]) {
+          state.mutual[bySide] = {
+            dataMap: new Map(),
+          };
+        }
+
+        state.mutual[bySide].dataMap = new Map(
+          state.mutual[bySide]?.dataMap,
+        ).set(mutual.entityId, mutual);
+
+        if (!state.mutual[side]) {
+          state.mutual[side] = {
+            dataMap: new Map(),
+          };
+        }
+
+        state.mutual[side].dataMap = new Map(state.mutual[side]?.dataMap).set(
+          mutual.byEntityId,
+          flipMutual(mutual),
+        );
+      }),
+      undefined,
+      `mr/mutual/create/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+    );
+  };
+
+  const createLocalMutual = async <B extends Entity, T extends Entity>(
+    byEntityType: B,
+    entityType: T,
+    byEntityId: string,
+    entityId: string,
+    mutualData: MutualData<B, T>,
+    data: EntitySchemaMap[T] | Record<string, any>,
+  ) => {
+    const mutual = constructMutual(
+      byEntityType,
+      byEntityId,
+      entityType,
+      entityId,
+      mutualData,
+      data as EntitySchemaMap[T],
     );
 
     monoriseStore.setState(
@@ -679,9 +737,14 @@ const initCoreActions = (
     isLoading: boolean;
     error?: ApplicationRequestError;
     requestKey: string;
+    isFirstFetched?: boolean;
+    refetch: () => Promise<CreatedEntity<T> | undefined>;
   } => {
     const dataMap = monoriseStore(
       (state) => state.entity[entityType]?.dataMap || new Map(),
+    );
+    const isFirstFetched = monoriseStore(
+      (state) => state.entity[entityType]?.isFirstFetched,
     );
     const requestKey = `entity/${entityType}/get/${id}`;
     const isLoading = useLoadStore(requestKey);
@@ -698,6 +761,12 @@ const initCoreActions = (
       isLoading,
       error,
       requestKey,
+      isFirstFetched,
+      refetch: async () => {
+        if (id) {
+          return await getEntity(entityType, id, { ...opts, forceFetch: true });
+        }
+      },
     };
   };
 
@@ -863,6 +932,7 @@ const initCoreActions = (
     isLoading: boolean;
     requestKey: string;
     error?: ApplicationRequestError;
+    isFirstFetched?: boolean;
   } => {
     const stateKey = `${byEntityType}/${entityType}/${byId}/list${chainEntityQuery ? `?${chainEntityQuery}` : ''}`;
     const state = monoriseStore((state) => state.mutual[stateKey]);
@@ -892,10 +962,20 @@ const initCoreActions = (
       opts,
       chainEntityQuery,
       stateKey,
+      opts?.forceFetch,
+      opts?.noData,
+      stateKey,
     ]);
 
     useEffect(() => {
-      if (dataMap.size !== mutuals?.length) {
+      const dataMapArray = Array.from(dataMap.values());
+      if (
+        dataMap.size !== mutuals?.length ||
+        dataMapArray.some(
+          (item, index) =>
+            JSON.stringify(item) !== JSON.stringify(mutuals[index]),
+        )
+      ) {
         setMutuals(Array.from(dataMap.values()) as Mutual<B, T>[]);
       }
     }, [dataMap, dataMap.size, mutuals?.length]);
@@ -906,6 +986,71 @@ const initCoreActions = (
       isLoading,
       requestKey,
       error,
+      isFirstFetched,
+    };
+  };
+
+  const useTaggedEntities = <T extends Entity>(
+    entityType: T,
+    tagName: string,
+    opts: CommonOptions & { params?: ListEntitiesByTagParams } = {},
+  ) => {
+    const { params } = opts || {};
+    const state = monoriseStore(
+      (state) => state.tag[`${entityType}/${tagName}/${params?.group || ''}`],
+    );
+    const { dataMap, isFirstFetched, lastKey } = state || {
+      dataMap: new Map(),
+    };
+    const [entities, setEntities] = useState<CreatedEntity<T>[]>([]);
+    const requestKey = `tag/${entityType}/${tagName}/${params?.group || ''}/list`;
+    const isLoading = useLoadStore(requestKey);
+    const error = useErrorStore(requestKey);
+
+    useEffect(() => {
+      if (entityType && tagName && params?.group) {
+        listEntitiesByTag(entityType, tagName, opts);
+      }
+    }, [entityType, opts, tagName, params?.group, opts?.forceFetch]);
+
+    useEffect(() => {
+      const dataMapArray = Array.from(dataMap.values());
+      if (
+        dataMap.size !== entities?.length ||
+        dataMapArray.some(
+          (item, index) =>
+            JSON.stringify(item) !== JSON.stringify(entities[index]),
+        )
+      ) {
+        setEntities(Array.from(dataMap.values()) as CreatedEntity<T>[]);
+      }
+    }, [dataMap, dataMap.size, entities?.length]);
+
+    return {
+      entities,
+      entitiesMap: dataMap as Map<string, CreatedEntity<T>>,
+      isLoading,
+      requestKey,
+      error,
+      isFirstFetched,
+      lastKey,
+      refetch: async () => {
+        if (entityType && tagName && params?.group) {
+          return await listEntitiesByTag(entityType, tagName, {
+            ...opts,
+            forceFetch: true,
+          });
+        }
+      },
+      listMore: async () => {
+        if (entityType && tagName && params?.group) {
+          return await listEntitiesByTag(entityType, tagName, {
+            ...opts,
+            forceFetch: true,
+            params: { ...params, lastKey },
+          });
+        }
+      },
     };
   };
 
@@ -922,6 +1067,7 @@ const initCoreActions = (
     getMutual,
     updateLocalEntity,
     createMutual,
+    createLocalMutual,
     upsertLocalMutual,
     editMutual,
     deleteMutual,
@@ -930,7 +1076,7 @@ const initCoreActions = (
     useEntities,
     useMutual,
     useMutuals,
-    listEntitiesByTag,
+    useTaggedEntities,
     useEntityState,
   };
 };

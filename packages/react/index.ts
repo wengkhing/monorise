@@ -126,6 +126,7 @@ const {
   deleteEntity,
   getMutual,
   createMutual,
+  createLocalMutual,
   upsertLocalMutual,
   editMutual,
   deleteMutual,
@@ -134,6 +135,7 @@ const {
   useEntities,
   useMutual,
   useMutuals,
+  useTaggedEntities,
   useEntityState,
 } = Monorise;
 
@@ -171,6 +173,7 @@ export {
   deleteEntity,
   getMutual,
   createMutual,
+  createLocalMutual,
   upsertLocalMutual,
   editMutual,
   deleteMutual,
@@ -179,6 +182,7 @@ export {
   useEntities,
   useMutual,
   useMutuals,
+  useTaggedEntities,
   useEntityState,
 };
 

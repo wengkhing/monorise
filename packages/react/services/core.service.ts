@@ -21,6 +21,7 @@ export type ListEntitiesByTagParams = {
   start?: string;
   end?: string;
   limit?: number;
+  lastKey?: string;
 };
 
 type ConfigOptions = {
@@ -38,6 +39,8 @@ export type CommonOptions = Partial<AxiosRequestConfig> & {
     loading?: string;
   };
   stateKey?: string;
+  forceFetch?: boolean;
+  noData?: boolean;
 };
 
 const initCoreService = (
@@ -217,11 +220,15 @@ const initCoreService = (
     const { mutualApiBaseUrl = MUTUAL_API_BASE_URL } = options;
     return axios.get<{ entities: Mutual<B, T>[]; lastKey: string }>(
       opts.customUrl ||
-        `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}${chainEntityQuery ? `?chainEntityQuery=${chainEntityQuery}` : ''}`,
+        `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}`,
       {
         requestKey: `mutual/${byEntityType}/${byEntityId}/${entityType}/list${chainEntityQuery ? `?${chainEntityQuery}` : ''}`,
         isInterruptive: opts.isInterruptive,
         feedback: opts.feedback,
+        params: {
+          chainEntityQuery,
+          ...(opts.noData && { projection: 'no-data' }),
+        },
       },
     );
   };
@@ -279,7 +286,7 @@ const initCoreService = (
     opts: CommonOptions = {},
   ) => {
     const { mutualApiBaseUrl = MUTUAL_API_BASE_URL } = options;
-    return axios.put<Mutual<B, T>>(
+    return axios.patch<Mutual<B, T>>(
       opts.customUrl ||
         `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
       payload,

@@ -6,7 +6,9 @@
   "types": "dist/index.d.ts",
   "packageManager": "npm@10.9.2",
   "scripts": {
-    "build": "turbo run build",
+    "build": "npm run clear-dist && turbo run build",
+    "build:no-cache": "npm run build -- --cache=local:",
+    "clear-dist": "./scripts/clear.sh",
     "release": "npm run build && npm run changeset -- publish",
     "version": "npm run changeset -- version",
     "changeset": "npx @changesets/cli",
@@ -14,12 +16,8 @@
     "changeset:dev-exit": "npm run changeset -- pre exit",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "files": [
-    "dist"
-  ],
-  "workspaces": [
-    "packages/*"
-  ],
+  "files": ["dist"],
+  "workspaces": ["packages/*"],
   "keywords": [],
   "author": "monorise",
   "license": "ISC",
@@ -34,6 +32,7 @@
   "exports": {
     "./base": "./dist/base/index.js",
     "./react": "./dist/react/index.js",
-    "./cli": "./dist/cli/index.js"
+    "./cli": "./dist/cli/index.js",
+    "./core": "./dist/core/index.js"
   }
 }

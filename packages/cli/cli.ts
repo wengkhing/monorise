@@ -82,7 +82,7 @@ export enum Entity {}
       `export type ${kebabToPascal(config.name)}Type = z.infer<(typeof ${variableName})['finalSchema']>;`,
     );
     schemaMapEntries.push(
-      `${kebabToCamel(config.name)}: ${kebabToPascal(config.name)}Type;`,
+      `[Entity.${enumKey}]: ${kebabToPascal(config.name)}Type;`,
     );
 
     // Generate config entry
@@ -132,6 +132,15 @@ export {
   AllowedEntityTypes,
   EmailAuthEnabledEntities,
 };
+
+const config = {
+  EntityConfig,
+  FormSchema,
+  AllowedEntityTypes,
+  EmailAuthEnabledEntities,
+};
+
+export default config;
 
 declare module '@monorise/base' {
   export enum Entity {
