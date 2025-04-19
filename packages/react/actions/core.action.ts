@@ -12,7 +12,7 @@ import {
   constructMutual,
   flipMutual,
 } from '../lib/entity';
-import { convertToMap } from '../lib/utils';
+import { convertToMap, mutualStateKey, tagStateKey } from '../lib/utils';
 import type {
   CommonOptions,
   CoreService,
@@ -152,14 +152,14 @@ const initCoreActions = (
     tagName: string,
     opts: CommonOptions & { params?: ListEntitiesByTagParams } = {},
   ) => {
-    const tagKey = `${entityType}/${tagName}/${opts.params?.group || ''}`;
+    const tagKey = tagStateKey(entityType, tagName, opts.params?.group);
 
     const state = monoriseStore.getState();
     const tagState = state.tag[tagKey] || {};
     const { isFirstFetched, dataMap } = tagState;
     const entityService = makeEntityService(entityType);
     const { forceFetch } = opts;
-    const requestKey = `tag/${entityType}/${tagName}/${opts.params?.group || ''}/list`;
+    const requestKey = `tag/${tagKey}/list`;
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
 
@@ -255,7 +255,7 @@ const initCoreActions = (
         state.entity[entityType].dataMap.set(data.entityId, data);
       }),
       undefined,
-      `mr/entity/upser/${entityType}/${id}`,
+      `mr/entity/upsert/${entityType}/${id}`,
     );
   };
 
@@ -274,7 +274,7 @@ const initCoreActions = (
 
         // update mutual's entity data
         for (const key of Object.keys(state.mutual)) {
-          const [_byEntity, _entityType, _byId] = key.split('/');
+          const [_byEntity, _byId, _entityType] = key.split('/');
           if ((_entityType as unknown as Entity) === entityType) {
             const mutual = state.mutual[key].dataMap.get(id);
             state.mutual[key].dataMap = new Map(state.mutual[key].dataMap).set(
@@ -314,7 +314,9 @@ const initCoreActions = (
     opts: CommonOptions = {},
     chainEntityQuery?: string,
   ) => {
-    const selfKey = opts.stateKey ?? `${byEntityType}/${id}/${entityType}`;
+    const selfKey =
+      opts.stateKey ??
+      mutualStateKey(byEntityType, id, entityType, undefined, chainEntityQuery);
     const mutualService = makeMutualService(byEntityType, entityType);
     const store = monoriseStore.getState();
     const mutualState = store.mutual[selfKey] || {};
@@ -375,11 +377,16 @@ const initCoreActions = (
       defaultMutualData?: Record<string, any>;
     } = {},
   ) => {
-    const selfKey = `${byEntityType}/${byEntityId}/${entityType}`;
+    const selfKey = mutualStateKey(byEntityType, byEntityId, entityType);
     const mutualService = makeMutualService(byEntityType, entityType);
     const store = monoriseStore.getState();
     const mutualState = store.mutual[selfKey] || {};
-    const requestKey = `mutual/${byEntityType}/${byEntityId}/${entityType}/${entityId}/get`;
+    const requestKey = `mutual/${mutualStateKey(
+      byEntityType,
+      byEntityId,
+      entityType,
+      entityId,
+    )}/get`;
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
 
@@ -438,7 +445,12 @@ const initCoreActions = (
           state.entity[entityType].dataMap = newEntityDataMap;
         }),
         undefined,
-        `mr/mutual/get/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+        `mr/mutual/get/${mutualStateKey(
+          byEntityType,
+          byEntityId,
+          entityType,
+          entityId,
+        )}`,
       );
     }
   };
@@ -461,8 +473,8 @@ const initCoreActions = (
 
     monoriseStore.setState(
       produce((state) => {
-        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
-        const side = `${entityType}/${entityId}/${byEntityType}`;
+        const bySide = mutualStateKey(byEntityType, byEntityId, entityType);
+        const side = mutualStateKey(entityType, entityId, byEntityType);
 
         if (!state.mutual[bySide]) {
           state.mutual[bySide] = {
@@ -486,7 +498,7 @@ const initCoreActions = (
         );
       }),
       undefined,
-      `mr/mutual/create/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+      `mr/mutual/create/${mutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
     );
   };
 
@@ -509,8 +521,8 @@ const initCoreActions = (
 
     monoriseStore.setState(
       produce((state) => {
-        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
-        const side = `${entityType}/${entityId}/${byEntityType}`;
+        const bySide = mutualStateKey(byEntityType, byEntityId, entityType);
+        const side = mutualStateKey(entityType, entityId, byEntityType);
 
         if (!state.mutual[bySide]) {
           state.mutual[bySide] = {
@@ -534,7 +546,7 @@ const initCoreActions = (
         );
       }),
       undefined,
-      `mr/mutual/create/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+      `mr/mutual/create/${mutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
     );
   };
 
@@ -573,8 +585,8 @@ const initCoreActions = (
 
     monoriseStore.setState(
       produce((state) => {
-        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
-        const side = `${entityType}/${entityId}/${byEntityType}`;
+        const bySide = mutualStateKey(byEntityType, byEntityId, entityType);
+        const side = mutualStateKey(entityType, entityId, byEntityType);
 
         if (!state.mutual[bySide]) {
           state.mutual[bySide] = {
@@ -598,7 +610,7 @@ const initCoreActions = (
         );
       }),
       undefined,
-      `mr/mutual/local-update/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+      `mr/mutual/local-update/${mutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
     );
   };
 
@@ -620,8 +632,8 @@ const initCoreActions = (
 
     monoriseStore.setState(
       produce((state) => {
-        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
-        const side = `${entityType}/${entityId}/${byEntityType}`;
+        const bySide = mutualStateKey(byEntityType, byEntityId, entityType);
+        const side = mutualStateKey(entityType, entityId, byEntityType);
 
         if (!state.mutual[bySide]) {
           state.mutual[bySide] = {
@@ -645,7 +657,7 @@ const initCoreActions = (
         );
       }),
       undefined,
-      `mr/mutual/edit/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+      `mr/mutual/edit/${mutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
     );
   };
 
@@ -665,8 +677,8 @@ const initCoreActions = (
 
     monoriseStore.setState(
       produce((state) => {
-        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
-        const side = `${entityType}/${entityId}/${byEntityType}`;
+        const bySide = mutualStateKey(byEntityType, byEntityId, entityType);
+        const side = mutualStateKey(entityType, entityId, byEntityType);
 
         state.mutual[bySide].dataMap.delete(data.entityId);
 
@@ -675,7 +687,7 @@ const initCoreActions = (
         }
       }),
       undefined,
-      `mr/mutual/delete/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+      `mr/mutual/delete/${mutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
     );
   };
 
@@ -687,8 +699,8 @@ const initCoreActions = (
   ) => {
     monoriseStore.setState(
       produce((state) => {
-        const bySide = `${byEntityType}/${byEntityId}/${entityType}`;
-        const side = `${entityType}/${entityId}/${byEntityType}`;
+        const bySide = mutualStateKey(byEntityType, byEntityId, entityType);
+        const side = mutualStateKey(entityType, entityId, byEntityType);
         const bySideDataMap = new Map(state[bySide]?.dataMap);
         const sideDataMap = new Map(state[side]?.dataMap);
         bySideDataMap.delete(entityId);
@@ -698,7 +710,7 @@ const initCoreActions = (
         state.mutual[side].dataMap.delete(byEntityId);
       }),
       undefined,
-      `mr/mutual/local-delete/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+      `mr/mutual/local-delete/${mutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
     );
   };
 
@@ -719,7 +731,11 @@ const initCoreActions = (
 
     const updatedState = mutuals.reduce(
       (acc, mutual) => {
-        const side = `${mutual.entityType}/${mutual.entityId}/${mutual.byEntityType}`;
+        const side = mutualStateKey(
+          mutual.entityType,
+          mutual.entityId,
+          mutual.byEntityType,
+        );
         const dataMap = new Map(store.mutual[side].dataMap);
         dataMap.delete(id);
         acc[side] = {
@@ -911,10 +927,9 @@ const initCoreActions = (
     error?: ApplicationRequestError;
     requestKey: string;
   } => {
-    const state = monoriseStore(
-      (state) => state.mutual[`${byEntityType}/${byId}/${entityType}`],
-    );
-    const requestKey = `mutual/${byEntityType}/${byId}/${entityType}/${id}/get`;
+    const stateKey = mutualStateKey(byEntityType, byId, entityType);
+    const state = monoriseStore((state) => state.mutual[stateKey]);
+    const requestKey = `mutual/${mutualStateKey(byEntityType, byId, entityType, id)}/get`;
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
@@ -952,7 +967,13 @@ const initCoreActions = (
     lastKey?: string;
     listMore: () => void;
   } => {
-    const stateKey = `${byEntityType}/${entityType}/${byId}/list${chainEntityQuery ? `?${chainEntityQuery}` : ''}`;
+    const stateKey = mutualStateKey(
+      byEntityType,
+      byId || '',
+      entityType,
+      undefined,
+      chainEntityQuery,
+    );
     const state = monoriseStore((state) => state.mutual[stateKey]);
     const { dataMap, isFirstFetched, lastKey } = state || {
       dataMap: new Map(),
@@ -1030,14 +1051,13 @@ const initCoreActions = (
     opts: CommonOptions & { params?: ListEntitiesByTagParams } = {},
   ) => {
     const { params } = opts || {};
-    const state = monoriseStore(
-      (state) => state.tag[`${entityType}/${tagName}/${params?.group || ''}`],
-    );
+    const stateKey = tagStateKey(entityType, tagName, params?.group);
+    const state = monoriseStore((state) => state.tag[stateKey]);
     const { dataMap, isFirstFetched, lastKey } = state || {
       dataMap: new Map(),
     };
     const [entities, setEntities] = useState<CreatedEntity<T>[]>([]);
-    const requestKey = `tag/${entityType}/${tagName}/${params?.group || ''}/list`;
+    const requestKey = `tag/${stateKey}/list`;
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
