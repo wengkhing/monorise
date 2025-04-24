@@ -1,29 +1,57 @@
 # Monorise
 
+<!--toc:start-->
+
+- [Monorise](#monorise)
+  - [🚀 Features](#🚀-features)
+  - [💡 Core Concepts](#💡-core-concepts)
+  - [📦 Installation](#📦-installation)
+    - [Using npm / yarn / etc](#using-npm-yarn-etc)
+    - [Or clone the repo](#or-clone-the-repo)
+  - [🛠️ Usage](#🛠️-usage)
+    - [Basic Example](#basic-example)
+    - [CLI Example (if applicable)](#cli-example-if-applicable)
+  - [📄 Documentation](#📄-documentation)
+  - [🤝 Contributing](#🤝-contributing)
+  - [📂 Folder Structure](#📂-folder-structure)
+  - [✅ Roadmap](#roadmap)
+  - [🧪 Running Tests](#🧪-running-tests)
+  - [🧰 Built With](#🧰-built-with)
+  - [Gitflow (How to develop)](#gitflow-how-to-develop)
+    - [Main branch](#main-branch)
+    - [Dev branch](#dev-branch)
+    - [Feature branch](#feature-branch)
+  - [📝 License](#📝-license)
+  - [🌟 Acknowledgments](#🌟-acknowledgments)
+  <!--toc:end-->
+
 Simplify Single table design with DynamoDB
 
 ## 🚀 Features
+
 - Use DynamoDB as a Graph DB
 - Access data through simple API calls
 - Relationships management between entities
 - No more writing complex DynamoDB queries
 
-## Core Concepts
+## 💡 Core Concepts
 
 - Entity
 - Mutual
 - Tag
-  
+
 Learn more about these concepts in our [Concepts Guide](docs/CONCEPT.MD).
 
 ## 📦 Installation
 
-### Using npm / yarn / etc.
+### Using npm / yarn / etc
+
 ```bash
 npm install @monorise/core @monorise/cli @monorise/react @monorise/base
 ```
 
 ### Or clone the repo
+
 ```bash
 git clone https://github.com/monorist/monorise.git
 cd monorise
@@ -33,13 +61,15 @@ npm install
 ## 🛠️ Usage
 
 ### Basic Example
-```js
-import { yourFunction } from 'your-package-name'
 
-yourFunction('example')
+```js
+import { yourFunction } from 'your-package-name';
+
+yourFunction('example');
 ```
 
 ### CLI Example (if applicable)
+
 ```bash
 npx @monorise/cli
 ```
@@ -81,6 +111,7 @@ git push origin your-feature
 - [ ] Component for SST/Pulumi for simpler setup
 
 ## 🧪 Running Tests
+
 ```bash
 # Start test environment
 npm run start:test-core-env
@@ -121,7 +152,6 @@ npm -w @monorise/core run test
 
 1. Run `npm run changeset` to record summary of your changes
 1. When ready for review, create a PR and point to `dev` branch
-
 
 ## 📝 License
 
