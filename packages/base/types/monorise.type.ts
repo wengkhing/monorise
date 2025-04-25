@@ -90,6 +90,7 @@ export interface MonoriseEntityConfig<
    */
   createSchema?: CO;
   searchableFields?: (keyof B)[];
+  uniqueFields?: (keyof B)[];
 
   /**
    * @description Define mutual relationship of this entity with other entities
