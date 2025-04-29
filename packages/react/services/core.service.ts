@@ -121,6 +121,27 @@ const initCoreService = (
     );
   };
 
+  const getEntityByUniqueField = <T extends Entity>(
+    entityType: T,
+    fieldName: string,
+    value: string,
+    opts: CommonOptions = {},
+  ) => {
+    const { entityApiBaseUrl = ENTITY_API_BASE_URL } = options;
+    return axios.get<CreatedEntity<T>>(
+      opts.customUrl ||
+        `${entityApiBaseUrl}/${entityType}/unique/${fieldName}/${value}`,
+      {
+        requestKey: `entity/${entityType}/unique/${fieldName}/${value}`,
+        isInterruptive: opts.isInterruptive,
+        feedback: {
+          loading: `Retrieving ${entityType}`,
+          ...(opts.feedback || {}),
+        },
+      },
+    );
+  };
+
   const createEntity = <T extends Entity>(
     entityType: T,
     values: DraftEntity<T>,
@@ -335,6 +356,11 @@ const initCoreService = (
       listEntitiesByTag(entityType, tagName, opts),
     getEntity: (id: string, opts: CommonOptions = {}) =>
       getEntity(entityType, id, opts),
+    getEntityByUniqueField: (
+      fieldName: string,
+      value: string,
+      opts: CommonOptions = {},
+    ) => getEntityByUniqueField(entityType, fieldName, value, opts),
     createEntity: (values: DraftEntity<T>, opts: CommonOptions = {}) =>
       createEntity(entityType, values, opts),
     upsertEntity: (

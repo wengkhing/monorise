@@ -49,7 +49,7 @@ const setupCommonRoutes =
       container.createEntityController.controller,
     );
     router.get(
-      '/entity/:entityType/:byUniqueField/:byUniqueFieldValue',
+      '/entity/:entityType/unique/:byUniqueField/:byUniqueFieldValue',
       container.getEntityByUniqueFieldController.controller,
     );
     router.get(
