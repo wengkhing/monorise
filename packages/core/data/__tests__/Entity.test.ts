@@ -2,7 +2,13 @@
 // This simulates the consumer-generated enum
 declare module '@monorise/base' {
   interface EntitySchemaMap {
-    user: { name: string; email: string; role: string };
+    user: {
+      name: string;
+      email: string;
+      role: string;
+      username: string;
+      age: number;
+    };
     product: { name: string };
     // admin: { name: string };
     // course: { name: string };
@@ -58,11 +64,14 @@ const mockEntityConfig = {
         newField: z.string(), // Added from upsert test
         city: z.string(), // Added from queryEntities test
         age: z.number(), // Added from Entity class test
+        username: z.string(),
       })
       .partial(),
     createSchema: z.object({
       name: z.string(),
+      username: z.string(),
     }),
+    uniqueFields: ['username'],
     searchableFields: ['name', 'email'],
     authMethod: { email: { tokenExpiresIn: 3600000 } }, // Define authMethod for USER
   }),
@@ -270,10 +279,12 @@ describe('Entity & EntityRepository', () => {
     // Use MockEntityType enum
     let createdUser: Entity<EntityType>;
     const userEmail = `test-${ulid()}@example.com`;
+    const username = `test-${ulid()}`;
     const userData = {
       name: 'Repo Test User',
       email: userEmail,
       role: 'admin',
+      username: username,
     };
 
     it('should create an entity successfully', async () => {
@@ -281,6 +292,7 @@ describe('Entity & EntityRepository', () => {
       createdUser = await entityRepository.createEntity(
         MockEntityType.USER as unknown as EntityType,
         userData,
+        undefined,
       );
 
       expect(createdUser).toBeInstanceOf(Entity);
@@ -307,6 +319,28 @@ describe('Entity & EntityRepository', () => {
         entityRepository.createEntity(
           MockEntityType.USER as unknown as EntityType,
           { name: 'Duplicate', email: 'dup@example.com' },
+          createdUser.entityId,
+        ),
+      ).rejects.toThrow(); // Should throw due to ConditionExpression failure
+    });
+
+    it('should fail to create an entity with existing unique field value', async () => {
+      await expect(
+        // Use MockEntityType enum
+        entityRepository.createEntity(
+          MockEntityType.USER as unknown as EntityType,
+          { name: 'Duplicate', username: createdUser.data.username },
+          createdUser.entityId,
+        ),
+      ).rejects.toThrow(); // Should throw due to ConditionExpression failure
+    });
+
+    it('should fail to create an entity when unique field value is not string', async () => {
+      await expect(
+        // Use MockEntityType enum
+        entityRepository.createEntity(
+          MockEntityType.USER as unknown as EntityType,
+          { name: 'Invalid record', username: ['123', '456'] },
           createdUser.entityId,
         ),
       ).rejects.toThrow(); // Should throw due to ConditionExpression failure
@@ -388,9 +422,41 @@ describe('Entity & EntityRepository', () => {
       ).rejects.toThrow('Email already exists');
     });
 
-    it('should update an entity', async () => {
+    it('should get an entity by unique field', async () => {
+      const fetched = await entityRepository.getEntityByUniqueField(
+        MockEntityType.USER as unknown as EntityType,
+        'username',
+        username,
+      );
+
+      expect(fetched.entityId).toEqual(createdUser.entityId);
+      expect(fetched.data).toEqual(userData);
+    });
+
+    it('should confirm unique field availability for an unused unique field value', async () => {
+      await expect(
+        entityRepository.getUniqueFieldValueAvailability(
+          MockEntityType.USER as unknown as EntityType,
+          'username',
+          'unused-username',
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should throw when checking unique field value for a used value', async () => {
+      await expect(
+        entityRepository.getUniqueFieldValueAvailability(
+          MockEntityType.USER as unknown as EntityType,
+          'username',
+          username,
+        ),
+      ).rejects.toThrow(`username '${username}' already exists`);
+    });
+
+    it('should update an entity with unique fields', async () => {
       const updatedName = 'Repo Test User Updated';
-      const updatedData = { name: updatedName };
+      const updatedUsername = 'updated-username';
+      const updatedData = { name: updatedName, username: updatedUsername };
       const originalUpdatedAt = createdUser.updatedAt;
 
       // Need a small delay to ensure updatedAt changes
@@ -399,13 +465,14 @@ describe('Entity & EntityRepository', () => {
       // Use MockEntityType enum
       const updatedEntity = await entityRepository.updateEntity(
         MockEntityType.USER as unknown as EntityType,
-        createdUser.entityId!,
+        createdUser.entityId as string,
         { data: updatedData },
       );
 
       expect(updatedEntity.entityId).toEqual(createdUser.entityId);
       expect(updatedEntity.data.name).toEqual(updatedName);
       expect(updatedEntity.data.email).toEqual(userEmail); // Email should remain unchanged
+      expect(updatedEntity.data.username).toEqual(updatedUsername);
       expect(updatedEntity.updatedAt).toBeDefined();
       expect(updatedEntity.updatedAt).not.toEqual(originalUpdatedAt);
       expect(updatedEntity.createdAt).toEqual(createdUser.createdAt); // CreatedAt should not change
@@ -414,7 +481,7 @@ describe('Entity & EntityRepository', () => {
       // Use MockEntityType enum
       const fetched = await entityRepository.getEntity(
         MockEntityType.USER as unknown as EntityType,
-        createdUser.entityId!,
+        createdUser.entityId as string,
       );
       expect(fetched.data.name).toEqual(updatedName);
       expect(fetched.updatedAt).toEqual(updatedEntity.updatedAt);
@@ -431,6 +498,110 @@ describe('Entity & EntityRepository', () => {
           },
         ),
       ).rejects.toThrow('Entity not found');
+    });
+
+    it('should get an entity by updated unique field', async () => {
+      const fetched = await entityRepository.getEntityByUniqueField(
+        MockEntityType.USER as unknown as EntityType,
+        'username',
+        'updated-username',
+      );
+
+      expect(fetched.entityId).toEqual(createdUser.entityId);
+      expect(fetched.data).toEqual({
+        ...userData,
+        username: 'updated-username',
+        name: 'Repo Test User Updated',
+      });
+    });
+
+    it('should confirm unique field availability for an previous unique field value', async () => {
+      await expect(
+        entityRepository.getUniqueFieldValueAvailability(
+          MockEntityType.USER as unknown as EntityType,
+          'username',
+          username,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should throw when checking unique field value for a used value (updated)', async () => {
+      await expect(
+        entityRepository.getUniqueFieldValueAvailability(
+          MockEntityType.USER as unknown as EntityType,
+          'username',
+          'updated-username',
+        ),
+      ).rejects.toThrow(`username 'updated-username' already exists`);
+    });
+
+    it('should update an entity without changing unique fields', async () => {
+      const updatedAge = 99;
+      const updatedData = { age: updatedAge };
+      const originalUpdatedAt = createdUser.updatedAt;
+
+      // Need a small delay to ensure updatedAt changes
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Use MockEntityType enum
+      const updatedEntity = await entityRepository.updateEntity(
+        MockEntityType.USER as unknown as EntityType,
+        createdUser.entityId as string,
+        { data: updatedData },
+      );
+
+      expect(updatedEntity.entityId).toEqual(createdUser.entityId);
+      expect(updatedEntity.data.name).toEqual('Repo Test User Updated');
+      expect(updatedEntity.data.email).toEqual(userEmail); // Email should remain unchanged
+      expect(updatedEntity.data.username).toEqual('updated-username');
+      expect(updatedEntity.data.age).toEqual(updatedAge);
+      expect(updatedEntity.updatedAt).toBeDefined();
+      expect(updatedEntity.updatedAt).not.toEqual(originalUpdatedAt);
+      expect(updatedEntity.createdAt).toEqual(createdUser.createdAt); // CreatedAt should not change
+
+      // Verify directly
+      // Use MockEntityType enum
+      const fetched = await entityRepository.getEntity(
+        MockEntityType.USER as unknown as EntityType,
+        createdUser.entityId as string,
+      );
+      expect(fetched.data.age).toEqual(updatedAge);
+      expect(fetched.updatedAt).toEqual(updatedEntity.updatedAt);
+    });
+
+    it('should get an entity by updated unique field', async () => {
+      const fetched = await entityRepository.getEntityByUniqueField(
+        MockEntityType.USER as unknown as EntityType,
+        'username',
+        'updated-username',
+      );
+
+      expect(fetched.entityId).toEqual(createdUser.entityId);
+      expect(fetched.data).toEqual({
+        ...userData,
+        username: 'updated-username',
+        name: 'Repo Test User Updated',
+      });
+    });
+
+    it('should confirm unique field availability for an previous unique field value', async () => {
+      await expect(
+        entityRepository.getUniqueFieldValueAvailability(
+          MockEntityType.USER as unknown as EntityType,
+          'username',
+          username,
+        ),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should throw when checking unique field value for a used value (updated)', async () => {
+      await expect(
+        entityRepository.getUniqueFieldValueAvailability(
+          MockEntityType.USER as unknown as EntityType,
+          'username',
+          'updated-username',
+        ),
+      ).rejects.toThrow(`username 'updated-username' already exists`);
     });
 
     it('should upsert an entity (update existing)', async () => {
