@@ -1,5 +1,16 @@
 # @monorise/core
 
+## 0.1.0
+
+### Minor Changes
+
+- 47957b2: Introduce unique fields
+
+### Patch Changes
+
+- Updated dependencies [47957b2]
+  - @monorise/base@0.0.4
+
 ## 0.0.4
 
 ### Patch Changes
