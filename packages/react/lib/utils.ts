@@ -30,3 +30,7 @@ export const tagStateKey = (
 ) => {
   return `${entityType}/${tagName}/${group || ''}`;
 };
+
+export const uniqueFieldStateKey = (fieldName: string, fieldValue: string) => {
+  return `${fieldName}/${fieldValue}`;
+};

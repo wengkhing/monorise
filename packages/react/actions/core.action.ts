@@ -12,7 +12,12 @@ import {
   constructMutual,
   flipMutual,
 } from '../lib/entity';
-import { convertToMap, mutualStateKey, tagStateKey } from '../lib/utils';
+import {
+  convertToMap,
+  mutualStateKey,
+  tagStateKey,
+  uniqueFieldStateKey,
+} from '../lib/utils';
 import type {
   CommonOptions,
   CoreService,
@@ -232,8 +237,9 @@ const initCoreActions = (
     const entityState = store.entity[entityType];
     const { dataMap } = entityState;
     const entityService = makeEntityService(entityType);
-    let entity = dataMap.get(`${fieldName}/${value}`);
-    const requestKey = `entity/${entityType}/unique/${fieldName}/${value}`;
+    const stateKey = uniqueFieldStateKey(fieldName, value);
+    let entity = dataMap.get(stateKey);
+    const requestKey = `entity/${entityType}/unique/${stateKey}`;
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
     const { forceFetch } = opts;
@@ -251,10 +257,10 @@ const initCoreActions = (
     monoriseStore.setState(
       produce((state) => {
         state.entity[entityType].dataMap.set(entity?.entityId, entity);
-        state.entity[entityType].dataMap.set(`${fieldName}/${value}`, entity);
+        state.entity[entityType].dataMap.set(`${stateKey}`, entity);
       }),
       undefined,
-      `mr/entity/unique/${entityType}/${fieldName}/${value}`,
+      `mr/entity/unique/${entityType}/${stateKey}`,
     );
 
     return entity;
@@ -838,7 +844,7 @@ const initCoreActions = (
 
   const useEntityByUniqueField = <T extends Entity>(
     entityType: T,
-    field: string,
+    fieldName: string,
     value?: string,
     opts: CommonOptions = {},
   ): {
@@ -855,25 +861,26 @@ const initCoreActions = (
     const isFirstFetched = monoriseStore(
       (state) => state.entity[entityType]?.isFirstFetched,
     );
-    const requestKey = `entity/${entityType}/unique/${field}/${value}`;
+    const stateKey = uniqueFieldStateKey(fieldName, value || '');
+    const requestKey = `entity/${entityType}/unique/${stateKey}`;
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
     useEffect(() => {
       if (value) {
-        getEntityByUniqueField(entityType, field, value, opts);
+        getEntityByUniqueField(entityType, fieldName, value, opts);
       }
-    }, [field, value, entityType, opts]);
+    }, [fieldName, value, entityType, opts]);
 
     return {
-      entity: value ? dataMap.get(`${field}/${value}`) : undefined,
+      entity: value ? dataMap.get(`${stateKey}`) : undefined,
       isLoading,
       error,
       requestKey,
       isFirstFetched,
       refetch: async () => {
         if (value) {
-          return await getEntityByUniqueField(entityType, field, value, {
+          return await getEntityByUniqueField(entityType, fieldName, value, {
             ...opts,
             forceFetch: true,
           });
