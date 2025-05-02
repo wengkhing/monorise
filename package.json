@@ -7,17 +7,21 @@
   "packageManager": "npm@10.9.2",
   "scripts": {
     "build": "npm run clear-dist && turbo run build",
-    "build:no-cache": "npm run build -- --cache=local:",
     "clear-dist": "./scripts/clear.sh",
     "release": "npm run build && npm run changeset -- publish",
     "version": "npm run changeset -- version",
     "changeset": "npx @changesets/cli",
     "changeset:dev-start": "npm run changeset -- pre enter dev",
     "changeset:dev-exit": "npm run changeset -- pre exit",
-    "start:test-core-env": "docker-compose -f packages/core/docker-compose.test.yml up"
+    "start:test-env": "./scripts/start-test-env.sh",
+    "test": "npm -w @monorise/core run test"
   },
-  "files": ["dist"],
-  "workspaces": ["packages/*"],
+  "files": [
+    "dist"
+  ],
+  "workspaces": [
+    "packages/*"
+  ],
   "keywords": [],
   "author": "monorise",
   "license": "MIT",
