@@ -3,6 +3,11 @@ import type { AxiosRequestConfig } from 'axios';
 import type { MonoriseStore } from '../store/monorise.store';
 import type { AxiosInterceptor } from '../types/api.type';
 import type { Mutual, MutualData } from '../types/mutual.type';
+import {
+  getMutualStateKey,
+  getTagStateKey,
+  getUniqueFieldStateKey,
+} from '../lib/utils';
 
 const ENTITY_API_BASE_URL = '/api/core/entity';
 const MUTUAL_API_BASE_URL = '/api/core/mutual';
@@ -94,7 +99,7 @@ const initCoreService = (
     return axios.get<{ entities: CreatedEntity<T>[]; lastKey: string }>(
       opts.customUrl || `${tagApiBaseUrl}/${entityType}/${tagName}`,
       {
-        requestKey: `tag/${entityType}/${tagName}/${opts.params?.group || ''}/list`,
+        requestKey: `tag/${getTagStateKey(entityType, tagName, opts.params?.group)}/list`,
         params: opts.params,
         isInterruptive: opts.isInterruptive,
         feedback: opts.feedback,
@@ -112,6 +117,27 @@ const initCoreService = (
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       {
         requestKey: `entity/${entityType}/get/${id}`,
+        isInterruptive: opts.isInterruptive,
+        feedback: {
+          loading: `Retrieving ${entityType}`,
+          ...(opts.feedback || {}),
+        },
+      },
+    );
+  };
+
+  const getEntityByUniqueField = <T extends Entity>(
+    entityType: T,
+    fieldName: string,
+    value: string,
+    opts: CommonOptions = {},
+  ) => {
+    const { entityApiBaseUrl = ENTITY_API_BASE_URL } = options;
+    return axios.get<CreatedEntity<T>>(
+      opts.customUrl ||
+        `${entityApiBaseUrl}/${entityType}/unique/${getUniqueFieldStateKey(fieldName, value)}`,
+      {
+        requestKey: `entity/${entityType}/unique/${getUniqueFieldStateKey(fieldName, value)}`,
         isInterruptive: opts.isInterruptive,
         feedback: {
           loading: `Retrieving ${entityType}`,
@@ -222,7 +248,7 @@ const initCoreService = (
       opts.customUrl ||
         `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}`,
       {
-        requestKey: `mutual/${byEntityType}/${byEntityId}/${entityType}/list${chainEntityQuery ? `?${chainEntityQuery}` : ''}`,
+        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, undefined, chainEntityQuery)}`,
         isInterruptive: opts.isInterruptive,
         feedback: opts.feedback,
         params: {
@@ -244,9 +270,9 @@ const initCoreService = (
     const { mutualApiBaseUrl = MUTUAL_API_BASE_URL } = options;
     return axios.get<Mutual<B, T>>(
       opts.customUrl ||
-        `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+        `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       {
-        requestKey: `mutual/${byEntityType}/${byEntityId}/${entityType}/${entityId}/get`,
+        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}/get`,
         isInterruptive: opts.isInterruptive ?? false,
         feedback: opts.feedback,
       },
@@ -264,7 +290,7 @@ const initCoreService = (
     const { mutualApiBaseUrl = MUTUAL_API_BASE_URL } = options;
     return axios.post<Mutual<B, T>>(
       opts.customUrl ||
-        `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+        `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       payload,
       {
         requestKey: `mutual/${byEntityType}/${byEntityId}/${entityType}/create`,
@@ -289,10 +315,10 @@ const initCoreService = (
     const { mutualApiBaseUrl = MUTUAL_API_BASE_URL } = options;
     return axios.patch<Mutual<B, T>>(
       opts.customUrl ||
-        `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+        `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       payload,
       {
-        requestKey: `mutual/${byEntityType}/${byEntityId}/${entityType}/${entityId}/update`,
+        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}/update`,
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: 'Updating linkage',
@@ -313,9 +339,9 @@ const initCoreService = (
     const { mutualApiBaseUrl = MUTUAL_API_BASE_URL } = options;
     return axios.delete(
       opts.customUrl ||
-        `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}/${entityId}`,
+        `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       {
-        requestKey: `mutual/${byEntityType}/${byEntityId}/${entityType}/${entityId}/delete`,
+        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}/delete`,
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: 'Removing linkage',
@@ -335,6 +361,11 @@ const initCoreService = (
       listEntitiesByTag(entityType, tagName, opts),
     getEntity: (id: string, opts: CommonOptions = {}) =>
       getEntity(entityType, id, opts),
+    getEntityByUniqueField: (
+      fieldName: string,
+      value: string,
+      opts: CommonOptions = {},
+    ) => getEntityByUniqueField(entityType, fieldName, value, opts),
     createEntity: (values: DraftEntity<T>, opts: CommonOptions = {}) =>
       createEntity(entityType, values, opts),
     upsertEntity: (

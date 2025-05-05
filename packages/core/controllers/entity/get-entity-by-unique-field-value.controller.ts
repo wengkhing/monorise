@@ -7,18 +7,18 @@ export class GetEntityByUniqueFieldValueController {
   constructor(private entityRepository: EntityRepository) {}
 
   controller: (req: Request, res: Response) => void = async (req, res) => {
-    const { entityType, byUniqueField, byUniqueFieldValue } =
+    const { entityType, uniqueField, uniqueFieldValue } =
       req.params as unknown as {
         entityType: Entity;
-        byUniqueField: string;
-        byUniqueFieldValue: string;
+        uniqueField: string;
+        uniqueFieldValue: string;
       };
 
     try {
       const entity = await this.entityRepository.getEntityByUniqueField(
         entityType,
-        byUniqueField,
-        byUniqueFieldValue,
+        uniqueField,
+        uniqueFieldValue,
       );
 
       return res.status(httpStatus.OK).json(entity);

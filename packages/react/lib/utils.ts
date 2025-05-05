@@ -13,7 +13,7 @@ export const convertToMap = <T extends Record<string, any>>(
   return map;
 };
 
-export const mutualStateKey = (
+export const getMutualStateKey = (
   byEntity: Entity,
   byEntityId: string | null,
   entity: Entity,
@@ -23,10 +23,17 @@ export const mutualStateKey = (
   return `${byEntity}/${byEntityId}/${entity}${entityId ? `/${entityId}` : ''}${chainEntityQuery ? `?${chainEntityQuery}` : ''}`;
 };
 
-export const tagStateKey = (
+export const getTagStateKey = (
   entityType: Entity,
   tagName: string,
   group?: string,
 ) => {
   return `${entityType}/${tagName}/${group || ''}`;
+};
+
+export const getUniqueFieldStateKey = (
+  fieldName: string,
+  fieldValue: string,
+) => {
+  return `${fieldName}/${fieldValue}`;
 };
