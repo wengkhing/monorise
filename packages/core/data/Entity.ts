@@ -1,9 +1,11 @@
 import {
   type AttributeValue,
+  BatchStatementErrorCodeEnum,
   ConditionalCheckFailedException,
   type DynamoDB,
   type QueryCommandInput,
   type TransactWriteItem,
+  TransactionCanceledException,
   type UpdateItemCommandInput,
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
@@ -446,7 +448,34 @@ export class EntityRepository extends Repository {
       uniqueFieldValues,
     });
 
-    await this.dynamodbClient.transactWriteItems({ TransactItems });
+    try {
+      await this.dynamodbClient.transactWriteItems({ TransactItems });
+    } catch (err) {
+      if (err instanceof TransactionCanceledException) {
+        let idxUniqueFieldErr = 2;
+
+        if (this.EmailAuthEnabledEntities.includes(entity.entityType)) {
+          idxUniqueFieldErr += 1;
+        }
+
+        const uniqueFieldErr =
+          err.CancellationReasons?.slice(idxUniqueFieldErr) || [];
+        for (let i = 0; i < uniqueFieldErr.length; i++) {
+          if (
+            uniqueFieldErr[i].Code ===
+            BatchStatementErrorCodeEnum.ConditionalCheckFailed
+          ) {
+            const field = uniqueFields[i];
+            throw new StandardError(
+              'UNIQUE_VALUE_EXISTS',
+              `${field} '${uniqueFieldValues[field]}' already exists`,
+            );
+          }
+        }
+      }
+
+      throw err;
+    }
 
     return entity;
   }
@@ -622,7 +651,30 @@ export class EntityRepository extends Repository {
             previousEntity,
           );
 
-          await this.dynamodbClient.transactWriteItems({ TransactItems });
+          try {
+            await this.dynamodbClient.transactWriteItems({ TransactItems });
+          } catch (err) {
+            if (err instanceof TransactionCanceledException) {
+              const [updateErr, ...uniqueFieldErr] =
+                err.CancellationReasons || [];
+
+              for (let i = 0; i < uniqueFieldErr.length; i++) {
+                if (
+                  i % 2 === 1 &&
+                  uniqueFieldErr[i].Code ===
+                    BatchStatementErrorCodeEnum.ConditionalCheckFailed
+                ) {
+                  const field = updatedUniqueFields[Math.floor(i / 2)];
+                  throw new StandardError(
+                    'UNIQUE_VALUE_EXISTS',
+                    `${field} '${entity.data[field]}' already exists`,
+                  );
+                }
+              }
+            }
+
+            throw err;
+          }
 
           return await this.getEntity(entityType, entityId);
         }
