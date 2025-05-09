@@ -1,5 +1,11 @@
 # @monorise/core
 
+## 0.1.5
+
+### Patch Changes
+
+- 84679d3: handle unique field transaction error
+
 ## 0.1.4
 
 ### Patch Changes
