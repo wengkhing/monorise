@@ -45,6 +45,12 @@ export class UpdateEntityController {
         });
       }
 
+      if (err instanceof StandardError && err.code === 'UNIQUE_VALUE_EXISTS') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+          ...err.toJSON(),
+        });
+      }
+
       console.log(
         '====UPDATE_ENTITY_CONTROLLER_ERROR',
         err,

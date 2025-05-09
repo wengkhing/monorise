@@ -40,6 +40,12 @@ export class CreateEntityController {
         });
       }
 
+      if (err instanceof StandardError && err.code === 'UNIQUE_VALUE_EXISTS') {
+        return res.status(httpStatus.BAD_REQUEST).json({
+          ...err.toJSON(),
+        });
+      }
+
       console.log('===create-entity error:', {
         err,
         errorContext: JSON.stringify({ body: req.body, headers: req.headers }),
