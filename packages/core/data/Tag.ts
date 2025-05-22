@@ -5,7 +5,7 @@ import type {
 } from '@aws-sdk/client-dynamodb';
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import type { EntitySchemaMap, Entity as EntityType } from '@monorise/base';
-import { StandardError } from '../errors/standard-error';
+import { StandardError, StandardErrorCode } from '../errors/standard-error';
 import { fromLastKeyQuery } from '../helpers/fromLastKeyQuery';
 import { toLastKeyResponse } from '../helpers/toLastKeyResponse';
 import { Entity } from './Entity';
@@ -46,7 +46,11 @@ export class TaggedEntity<T extends EntityType> extends Entity<T> {
   static fromItem<T extends EntityType>(
     item?: Record<string, AttributeValue>,
   ): TaggedEntity<T> {
-    if (!item) throw new StandardError('TAG_IS_UNDEFINED', 'Tag item empty');
+    if (!item)
+      throw new StandardError(
+        StandardErrorCode.TAG_IS_UNDEFINED,
+        'Tag item empty',
+      );
 
     const parsedItem = unmarshall(item);
 
@@ -199,7 +203,7 @@ export class TagRepository extends Repository {
   }): Promise<TaggedEntity<T>> {
     if (!entity.entityId) {
       throw new StandardError(
-        'ENTITY_ID_IS_UNDEFINED',
+        StandardErrorCode.ENTITY_ID_IS_UNDEFINED,
         'entityId is undefined',
       );
     }
@@ -377,7 +381,7 @@ export class TagRepository extends Repository {
 
     if (!expression) {
       throw new StandardError(
-        'INVALID_QUERY',
+        StandardErrorCode.INVALID_QUERY,
         'Invalid query. Please provide a valid query',
         null,
         errorContext,
