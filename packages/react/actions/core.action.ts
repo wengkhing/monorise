@@ -14,8 +14,12 @@ import {
 } from '../lib/entity';
 import {
   convertToMap,
+  getEntityRequestKey,
+  getMutualRequestKey,
   getMutualStateKey,
+  getTagRequestKey,
   getTagStateKey,
+  getUniqueFieldRequestKey,
   getUniqueFieldStateKey,
 } from '../lib/utils';
 import type {
@@ -55,7 +59,7 @@ const initCoreActions = (
     const { isFirstFetched } = entityState;
     const entityService = makeEntityService(entityType);
     const { skRange } = params;
-    const requestKey = `entity/${entityType}/list`;
+    const requestKey = getEntityRequestKey('list', entityType);
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
 
@@ -164,7 +168,12 @@ const initCoreActions = (
     const { isFirstFetched, dataMap } = tagState;
     const entityService = makeEntityService(entityType);
     const { forceFetch } = opts;
-    const requestKey = `tag/${tagKey}/list`;
+    const requestKey = getTagRequestKey(
+      'list',
+      entityType,
+      tagName,
+      opts.params?.group,
+    );
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
 
@@ -205,7 +214,7 @@ const initCoreActions = (
     const { dataMap } = entityState;
     const entityService = makeEntityService(entityType);
     let entity = dataMap.get(id);
-    const requestKey = `entity/${entityType}/get/${id}`;
+    const requestKey = getEntityRequestKey('get', entityType, id);
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
     const { forceFetch } = opts;
@@ -239,7 +248,7 @@ const initCoreActions = (
     const entityService = makeEntityService(entityType);
     const stateKey = getUniqueFieldStateKey(fieldName, value);
     let entity = dataMap.get(stateKey);
-    const requestKey = `entity/${entityType}/unique/${stateKey}`;
+    const requestKey = getUniqueFieldRequestKey(entityType, fieldName, value);
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
     const { forceFetch } = opts;
@@ -379,7 +388,14 @@ const initCoreActions = (
     const store = monoriseStore.getState();
     const mutualState = store.mutual[selfKey] || {};
     const { isFirstFetched } = mutualState;
-    const requestKey = `mutual/${selfKey}/list`;
+    const requestKey = getMutualRequestKey(
+      'list',
+      byEntityType,
+      entityType,
+      id,
+      undefined,
+      chainEntityQuery,
+    );
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
     const { forceFetch } = opts;
@@ -439,12 +455,13 @@ const initCoreActions = (
     const mutualService = makeMutualService(byEntityType, entityType);
     const store = monoriseStore.getState();
     const mutualState = store.mutual[selfKey] || {};
-    const requestKey = `mutual/${getMutualStateKey(
+    const requestKey = getMutualRequestKey(
+      'get',
       byEntityType,
-      byEntityId,
       entityType,
+      byEntityId,
       entityId,
-    )}/get`;
+    );
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
 
@@ -832,7 +849,7 @@ const initCoreActions = (
     const isFirstFetched = monoriseStore(
       (state) => state.entity[entityType]?.isFirstFetched,
     );
-    const requestKey = `entity/${entityType}/get/${id}`;
+    const requestKey = getEntityRequestKey('get', entityType, id);
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
@@ -876,7 +893,11 @@ const initCoreActions = (
       (state) => state.entity[entityType]?.isFirstFetched,
     );
     const stateKey = getUniqueFieldStateKey(fieldName, value || '');
-    const requestKey = `entity/${entityType}/unique/${stateKey}`;
+    const requestKey = getUniqueFieldRequestKey(
+      entityType,
+      fieldName,
+      value || '',
+    );
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
@@ -926,7 +947,7 @@ const initCoreActions = (
     lastKey?: string;
     isFirstFetched?: boolean;
   } => {
-    const requestKey = `entity/${entityType}/list`;
+    const requestKey = getEntityRequestKey('list', entityType);
     const isListing = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
     const state = monoriseStore((state) => state.entity[entityType]);
@@ -1034,7 +1055,13 @@ const initCoreActions = (
   } => {
     const stateKey = getMutualStateKey(byEntityType, byId, entityType);
     const state = monoriseStore((state) => state.mutual[stateKey]);
-    const requestKey = `mutual/${getMutualStateKey(byEntityType, byId, entityType, id)}/get`;
+    const requestKey = getMutualRequestKey(
+      'get',
+      byEntityType,
+      entityType,
+      byId,
+      id,
+    );
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
@@ -1084,7 +1111,14 @@ const initCoreActions = (
       dataMap: new Map(),
     };
     const [mutuals, setMutuals] = useState<Mutual<B, T>[]>([]);
-    const requestKey = `mutual/${stateKey}`;
+    const requestKey = getMutualRequestKey(
+      'list',
+      byEntityType,
+      entityType,
+      byId || '',
+      undefined,
+      chainEntityQuery,
+    );
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
@@ -1162,7 +1196,12 @@ const initCoreActions = (
       dataMap: new Map(),
     };
     const [entities, setEntities] = useState<CreatedEntity<T>[]>([]);
-    const requestKey = `tag/${stateKey}/list`;
+    const requestKey = getTagRequestKey(
+      'list',
+      entityType,
+      tagName,
+      params?.group,
+    );
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
