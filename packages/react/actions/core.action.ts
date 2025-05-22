@@ -345,6 +345,14 @@ const initCoreActions = (
     monoriseStore.setState(
       produce((state) => {
         state.entity[entityType].dataMap.delete(id);
+
+        // delete mutual's entity data
+        for (const key of Object.keys(state.mutual)) {
+          const [_byEntity, _byId, _entityType] = key.split('/');
+          if ((_entityType as unknown as Entity) === entityType) {
+            state.mutual[key].dataMap.delete(id);
+          }
+        }
       }),
       undefined,
       `mr/entity/delete/${entityType}/${id}`,
@@ -1186,6 +1194,7 @@ const initCoreActions = (
       isFirstFetched,
       lastKey,
       refetch: async () => {
+        console.log(' >>>', entityType, tagName, params?.group);
         if (entityType && tagName && params?.group) {
           return await listEntitiesByTag(entityType, tagName, {
             ...opts,
