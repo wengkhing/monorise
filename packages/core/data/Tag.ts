@@ -6,6 +6,8 @@ import type {
 import { marshall, unmarshall } from '@aws-sdk/util-dynamodb';
 import type { EntitySchemaMap, Entity as EntityType } from '@monorise/base';
 import { StandardError } from '../errors/standard-error';
+import { fromLastKeyQuery } from '../helpers/fromLastKeyQuery';
+import { toLastKeyResponse } from '../helpers/toLastKeyResponse';
 import { Entity } from './Entity';
 import type { ProjectionExpressionValues } from './ProjectionExpression';
 import { Repository } from './abstract/Repository.base';
@@ -259,13 +261,13 @@ export class TagRepository extends Repository {
     query?: string;
     group?: string;
     options?: {
-      lastKey?: Record<string, AttributeValue>;
+      lastKey?: string;
       ProjectionExpression?: ProjectionExpressionValues;
     };
   }): Promise<{
     items: Entity<T>[];
     totalCount?: number;
-    lastKey?: Record<string, AttributeValue>;
+    lastKey?: string;
   }> {
     const errorContext: Record<string, unknown> = {
       entityType,
@@ -397,12 +399,12 @@ export class TagRepository extends Repository {
         ...defaultListQuery,
         ...(remainingCount && { Limit: remainingCount }),
         ...(lastKey && {
-          ExclusiveStartKey: lastKey,
+          ExclusiveStartKey: fromLastKeyQuery(lastKey),
         }),
       });
       items = items.concat(resp.Items ?? []);
 
-      lastKey = resp.LastEvaluatedKey;
+      lastKey = toLastKeyResponse(resp.LastEvaluatedKey);
 
       if (limit) {
         remainingCount = remainingCount - (resp.Items?.length ?? 0);

@@ -11,7 +11,9 @@ import type { Entity, EntitySchemaMap } from '@monorise/base';
 import { ulid } from 'ulid';
 import type { DbUtils } from '../data/DbUtils';
 import { StandardError } from '../errors/standard-error';
+import { fromLastKeyQuery } from '../helpers/fromLastKeyQuery';
 import { sleep } from '../helpers/sleep';
+import { toLastKeyResponse } from '../helpers/toLastKeyResponse';
 import {
   PROJECTION_EXPRESSION,
   type ProjectionExpressionValues,
@@ -176,13 +178,13 @@ export class MutualRepository extends Repository {
     byEntityId: string,
     entityType: T,
     opts: {
-      lastKey?: Record<string, AttributeValue>;
+      lastKey?: string;
       ProjectionExpression?: ProjectionExpressionValues;
       limit?: number; // if this is not set, retrieve all items
     } = {},
   ): Promise<{
     items: Mutual<B, T, M>[];
-    lastKey?: Record<string, AttributeValue>;
+    lastKey?: string;
   }> {
     const mutual = new Mutual(
       byEntityType,
@@ -223,7 +225,7 @@ export class MutualRepository extends Repository {
         ...listAssociationsQuery,
         ...(remainingCount && { Limit: remainingCount }),
         ...(lastKey && {
-          ExclusiveStartKey: lastKey,
+          ExclusiveStartKey: fromLastKeyQuery(lastKey),
         }),
       });
 
@@ -231,7 +233,7 @@ export class MutualRepository extends Repository {
         resp.Items?.map((item) => Mutual.fromItem(item)) || [],
       );
 
-      lastKey = resp.LastEvaluatedKey;
+      lastKey = toLastKeyResponse(resp.LastEvaluatedKey);
       if (opts.limit) {
         remainingCount = remainingCount - (resp.Items?.length ?? 0);
       }

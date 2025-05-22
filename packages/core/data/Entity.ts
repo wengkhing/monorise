@@ -16,6 +16,8 @@ import type {
 } from '@monorise/base';
 import { ulid } from 'ulid';
 import { StandardError } from '../errors/standard-error';
+import { fromLastKeyQuery } from '../helpers/fromLastKeyQuery';
+import { toLastKeyResponse } from '../helpers/toLastKeyResponse';
 import type { ProjectionExpressionValues } from './ProjectionExpression';
 import { Item } from './abstract/Item.base';
 import { Repository } from './abstract/Repository.base';
@@ -126,13 +128,13 @@ export class EntityRepository extends Repository {
       end: string;
     };
     options?: {
-      lastKey?: Record<string, AttributeValue>;
+      lastKey?: string;
       ProjectionExpression?: ProjectionExpressionValues;
     };
   }): Promise<{
     items: Entity<T>[];
     totalCount?: number;
-    lastKey?: Record<string, AttributeValue>;
+    lastKey?: string;
   }> {
     const entity = new Entity(entityType);
     // when query for records that SK are between provided start and end
@@ -189,12 +191,12 @@ export class EntityRepository extends Repository {
         ...defaultListQuery,
         ...(remainingCount && { Limit: remainingCount }),
         ...(lastKey && {
-          ExclusiveStartKey: lastKey,
+          ExclusiveStartKey: fromLastKeyQuery(lastKey),
         }),
       });
       items = items.concat(resp.Items ?? []);
 
-      lastKey = resp.LastEvaluatedKey;
+      lastKey = toLastKeyResponse(resp.LastEvaluatedKey);
 
       if (limit) {
         remainingCount = remainingCount - (resp.Items?.length ?? 0);
