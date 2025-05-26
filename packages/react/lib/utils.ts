@@ -65,9 +65,9 @@ export const getTagRequestKey = (
   mode: 'list',
   entityType: Entity,
   tagName: string,
-  group?: string,
+  params: Record<string, string> = {},
 ) => {
-  return `tag/${getTagStateKey(entityType, tagName, group)}/${mode}`;
+  return `tag/${getTagStateKey(entityType, tagName, params)}/${mode}`;
 };
 
 export const getUniqueFieldRequestKey = (

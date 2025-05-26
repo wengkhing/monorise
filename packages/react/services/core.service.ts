@@ -103,12 +103,9 @@ const initCoreService = (
     return axios.get<{ entities: CreatedEntity<T>[]; lastKey: string }>(
       opts.customUrl || `${tagApiBaseUrl}/${entityType}/${tagName}`,
       {
-        requestKey: opts.requestKey || getTagRequestKey(
-          'list',
-          entityType,
-          tagName,
-          opts.params?.group,
-        ),
+        requestKey:
+          opts.requestKey ||
+          getTagRequestKey('list', entityType, tagName, opts.params),
         params: opts.params,
         isInterruptive: opts.isInterruptive,
         feedback: opts.feedback,

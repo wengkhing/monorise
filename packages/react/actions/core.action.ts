@@ -172,7 +172,7 @@ const initCoreActions = (
       'list',
       entityType,
       tagName,
-      opts.params?.group,
+      opts.params,
     );
     const isLoading = checkIsLoading(requestKey);
     const error = getError(requestKey);
@@ -1199,12 +1199,7 @@ const initCoreActions = (
       dataMap: new Map(),
     };
     const [entities, setEntities] = useState<CreatedEntity<T>[]>([]);
-    const requestKey = getTagRequestKey(
-      'list',
-      entityType,
-      tagName,
-      params?.group,
-    );
+    const requestKey = getTagRequestKey('list', entityType, tagName, params);
     const isLoading = useLoadStore(requestKey);
     const error = useErrorStore(requestKey);
 
