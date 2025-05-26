@@ -259,10 +259,8 @@ export const handler =
 
           if (
             err instanceof StandardError &&
-            [
-              StandardErrorCode.INVALID_MUTUAL,
-              StandardErrorCode.MUTUAL_LOCK_CONFLICT,
-            ].includes(err.code as StandardErrorCode)
+            (err.code === StandardErrorCode.INVALID_MUTUAL ||
+              err.code === StandardErrorCode.MUTUAL_LOCK_CONFLICT)
           ) {
             return;
           }
