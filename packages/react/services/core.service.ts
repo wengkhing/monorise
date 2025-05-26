@@ -49,6 +49,7 @@ export type CommonOptions = Partial<AxiosRequestConfig> & {
   stateKey?: string;
   forceFetch?: boolean;
   noData?: boolean;
+  requestKey?: string;
 };
 
 const initCoreService = (
@@ -102,7 +103,7 @@ const initCoreService = (
     return axios.get<{ entities: CreatedEntity<T>[]; lastKey: string }>(
       opts.customUrl || `${tagApiBaseUrl}/${entityType}/${tagName}`,
       {
-        requestKey: getTagRequestKey(
+        requestKey: opts.requestKey || getTagRequestKey(
           'list',
           entityType,
           tagName,
