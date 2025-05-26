@@ -1,8 +1,11 @@
 import type { CreatedEntity, DraftEntity, Entity } from '@monorise/base';
 import type { AxiosRequestConfig } from 'axios';
 import {
+  getEntityRequestKey,
+  getMutualRequestKey,
   getMutualStateKey,
-  getTagStateKey,
+  getTagRequestKey,
+  getUniqueFieldRequestKey,
   getUniqueFieldStateKey,
 } from '../lib/utils';
 import type { MonoriseStore } from '../store/monorise.store';
@@ -67,7 +70,7 @@ const initCoreService = (
       lastKey?: string;
       totalCount: number;
     }>(opts.customUrl || `${entityApiBaseUrl}/${entityType}`, {
-      requestKey: `entity/${entityType}/list`,
+      requestKey: getEntityRequestKey('list', entityType),
       params: payload ?? undefined,
       isInterruptive: opts.isInterruptive,
       feedback: opts.feedback,
@@ -83,7 +86,7 @@ const initCoreService = (
     return axios.get<{ data: CreatedEntity<T>[] }>(
       opts.customUrl || `${entityApiBaseUrl}/${entityType}`,
       {
-        requestKey: `entity/${entityType}/search`,
+        requestKey: getEntityRequestKey('search', entityType),
         params: { query },
         isInterruptive: opts.isInterruptive,
         feedback: opts.feedback,
@@ -101,7 +104,8 @@ const initCoreService = (
       opts.customUrl || `${tagApiBaseUrl}/${entityType}/${tagName}`,
       {
         requestKey:
-          opts.requestKey || `tag/${getTagStateKey(entityType, tagName)}/list`,
+          opts.requestKey ||
+          getTagRequestKey('list', entityType, tagName, opts.params),
         params: opts.params,
         isInterruptive: opts.isInterruptive,
         feedback: opts.feedback,
@@ -118,7 +122,7 @@ const initCoreService = (
     return axios.get<CreatedEntity<T>>(
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       {
-        requestKey: `entity/${entityType}/get/${id}`,
+        requestKey: getEntityRequestKey('get', entityType, id),
         isInterruptive: opts.isInterruptive,
         feedback: {
           loading: `Retrieving ${entityType}`,
@@ -139,7 +143,7 @@ const initCoreService = (
       opts.customUrl ||
         `${entityApiBaseUrl}/${entityType}/unique/${getUniqueFieldStateKey(fieldName, value)}`,
       {
-        requestKey: `entity/${entityType}/unique/${getUniqueFieldStateKey(fieldName, value)}`,
+        requestKey: getUniqueFieldRequestKey(entityType, fieldName, value),
         isInterruptive: opts.isInterruptive,
         feedback: {
           loading: `Retrieving ${entityType}`,
@@ -160,7 +164,7 @@ const initCoreService = (
       opts.customUrl || `${entityApiBaseUrl}/${entityType}`,
       values,
       {
-        requestKey: `entity/${entityType}/create`,
+        requestKey: getEntityRequestKey('create', entityType),
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: `Creating ${entityConfig[entityType].displayName}`,
@@ -183,7 +187,7 @@ const initCoreService = (
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       values,
       {
-        requestKey: `entity/${entityType}/upsert/${id}`,
+        requestKey: getEntityRequestKey('upsert', entityType, id),
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: `Updating ${entityConfig[entityType].displayName}`,
@@ -206,7 +210,7 @@ const initCoreService = (
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       values,
       {
-        requestKey: `entity/${entityType}/edit/${id}`,
+        requestKey: getEntityRequestKey('edit', entityType, id),
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: `Updating ${entityConfig[entityType].displayName}`,
@@ -227,7 +231,7 @@ const initCoreService = (
     return axios.delete(
       opts.customUrl || `${entityApiBaseUrl}/${entityType}/${id}`,
       {
-        requestKey: `entity/${entityType}/delete/${id}`,
+        requestKey: getEntityRequestKey('delete', entityType, id),
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: `Deleting ${entityConfig[entityType].displayName}`,
@@ -250,7 +254,14 @@ const initCoreService = (
       opts.customUrl ||
         `${mutualApiBaseUrl}/${byEntityType}/${byEntityId}/${entityType}`,
       {
-        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, undefined, chainEntityQuery)}`,
+        requestKey: getMutualRequestKey(
+          'list',
+          byEntityType,
+          entityType,
+          byEntityId,
+          undefined,
+          chainEntityQuery,
+        ),
         isInterruptive: opts.isInterruptive,
         feedback: opts.feedback,
         params: {
@@ -274,7 +285,13 @@ const initCoreService = (
       opts.customUrl ||
         `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       {
-        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}/get`,
+        requestKey: getMutualRequestKey(
+          'get',
+          byEntityType,
+          entityType,
+          byEntityId,
+          entityId,
+        ),
         isInterruptive: opts.isInterruptive ?? false,
         feedback: opts.feedback,
       },
@@ -295,7 +312,12 @@ const initCoreService = (
         `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       payload,
       {
-        requestKey: `mutual/${byEntityType}/${byEntityId}/${entityType}/create`,
+        requestKey: getMutualRequestKey(
+          'create',
+          byEntityType,
+          entityType,
+          byEntityId,
+        ),
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: 'Creating linkage',
@@ -320,7 +342,13 @@ const initCoreService = (
         `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       payload,
       {
-        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}/update`,
+        requestKey: getMutualRequestKey(
+          'update',
+          byEntityType,
+          entityType,
+          byEntityId,
+          entityId,
+        ),
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: 'Updating linkage',
@@ -343,7 +371,13 @@ const initCoreService = (
       opts.customUrl ||
         `${mutualApiBaseUrl}/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}`,
       {
-        requestKey: `mutual/${getMutualStateKey(byEntityType, byEntityId, entityType, entityId)}/delete`,
+        requestKey: getMutualRequestKey(
+          'delete',
+          byEntityType,
+          entityType,
+          byEntityId,
+          entityId,
+        ),
         isInterruptive: opts.isInterruptive ?? true,
         feedback: {
           loading: 'Removing linkage',
