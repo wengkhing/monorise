@@ -1233,7 +1233,6 @@ const initCoreActions = (
       isFirstFetched,
       lastKey,
       refetch: async () => {
-        console.log(' >>>', entityType, tagName, params?.group);
         if (entityType && tagName && params?.group) {
           return await listEntitiesByTag(entityType, tagName, {
             ...opts,
