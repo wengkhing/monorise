@@ -25,44 +25,26 @@
   - [🌟 Acknowledgments](#🌟-acknowledgments)
   <!--toc:end-->
 
-Full-stack data framework to simplify Single table design in DynamoDB using graph database principles.
+Full-stack data framework to simplify Single table design in DynamoDB
+using graph database principles.
 
-## 🚀 Features
+## ✨ Why Build with Monorise?
 
-- ⚡ **Blazing Fast O(1) Performance**: Engineered from the ground up for
-  single-table design, Monorise guarantees consistent O(1) query performance,
-  no matter how complex or large your dataset becomes. Experience the true
-  speed of DynamoDB.
-- 🧠 **Intelligent Single-Table Design**: Leverage the power of DynamoDB's
-  single-table pattern without the headaches. Monorise handles complex access
-  patterns and partitioning automatically, so you can focus on your application,
-  not your data model.
-- 🔄 **Automated Denormalization & Duplication**: Say goodbye to manual data
-  synchronization! Monorise intelligently manages data denormalization and
-  duplication, ensuring data consistency across your single table with zero
-  developer overhead.
-- 💡 Intuitive Graph-like Modeling: Model complex relationships with ease
-  using our core building blocks:
-  - Entity: Define distinct objects and concepts.
-  - Mutual: Capture rich, data-bearing relationships between entities,
-    supporting many-to-many and stateful interactions.
-  - Tag: Attach flexible key-value pairs for powerful classification,
-    sorting, and filtering capabilities.
-- 👋 **Familiar Relational Database Feel**: Querying your data feels intuitive
-  and familiar, much like working with a traditional relational database,
-  but with the boundless scalability and speed of a modern NoSQL infrastructure.
-- 🚀 **Seamless Full-Stack Integration**: Designed for the modern full-stack
-  developer. Our upcoming unified monorise package and SST v3 Super Component
-  will streamline your entire development-to-deployment workflow on AWS.
-- 🏎️ **Optimized for Serverless**: Built with performance-first principles,
-  utilizing lightweight and performant runtimes (migrating to Hono) to ensure
-  rapid cold starts and efficient execution in serverless environments.
-- 🛡️ **Battle-Tested Reliability**: Enjoy a robust and well-tested framework that
-  simplifies complex DynamoDB operations, reducing potential errors and ensuring
-  data integrity.
-- 📈 **Scalability by Design**: Inherit DynamoDB's infinite scalability, empowered
-  by Monorise's optimized data access patterns, allowing your application to grow
-  without limits.
+- ⚡ **O(1) Performance**: Consistent, blazing-fast queries regardless of data
+  size or complexity.
+- 🧠 **Smart Single-Table Design**: Automates complex partitioning and access
+  patterns.
+- 🔄 **Auto Denormalization**: Monorise handles data duplication, keeping
+  your data consistent.
+- 💡 **Intuitive Data Modeling**: Use Entities, Mutuals (relationships
+  with data), and Tags for flexible, graph-like data.
+- 👋 **Familiar Dev Experience**: Query like a relational database, but
+  with NoSQL scale.
+- 🚀 **Seamless Full-Stack**: Unified package and SST v3 Super Component
+  for easy setup and deployment.
+- 🏎️ **Serverless Optimized**: Built for speed with lightweight runtimes.
+- 📈 **Scalability by Design**: Grow your app infinitely, powered by
+  DynamoDB and Monorise's efficiency.
 
 ## 💡 Core Concepts
 
