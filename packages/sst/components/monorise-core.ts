@@ -4,6 +4,7 @@ import { QFunction } from './q-function';
 
 type MonoriseCoreArgs = {
   tableTtl?: string;
+  slackWebhook?: string;
 };
 
 export class MonoriseCore {
@@ -35,6 +36,11 @@ export class MonoriseCore {
       name: `${$app.stage}-${id}-monorise-send-cloudwatch-alarm`,
       handler:
         'node_modules/monorise/sst/function/send-cloudwatch-alarm.handler',
+      memory: '512 MB',
+      runtime,
+      environment: args?.slackWebhook
+        ? { SLACK_MONITOR_WEBHOOK: args.slackWebhook }
+        : undefined,
     });
 
     this.bus.subscribe(
@@ -45,6 +51,9 @@ export class MonoriseCore {
           'node_modules/monorise/sst/function/send-error-message.handler',
         memory: '512 MB',
         runtime,
+        environment: args?.slackWebhook
+          ? { SLACK_MONITOR_WEBHOOK: args.slackWebhook }
+          : undefined,
       },
       {
         pattern: {
@@ -68,6 +77,7 @@ export class MonoriseCore {
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
+      dlqTopic: this.dlqTopic,
       runtime,
       environment,
     });
@@ -78,6 +88,7 @@ export class MonoriseCore {
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
+      dlqTopic: this.dlqTopic,
       runtime,
       environment,
     });
@@ -88,6 +99,7 @@ export class MonoriseCore {
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
+      dlqTopic: this.dlqTopic,
       runtime,
       environment,
     });
