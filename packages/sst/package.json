@@ -1,0 +1,22 @@
+{
+  "name": "@monorise/sst",
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b --watch"
+  },
+  "files": ["dist"],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "peerDependencies": {
+    "sst": "^3.16.3"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.149"
+  }
+}
