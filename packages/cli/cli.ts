@@ -18,13 +18,6 @@ function kebabToPascal(kebab: string): string {
     .join('');
 }
 
-/**
- * Generates the config.ts file based on entity definitions.
- * @param configDir The directory containing the source entity files.
- * @param monoriseOutputDir The output directory for generated files (.monorise).
- * @returns The path to the generated config.ts file.
- * @throws Error if entity name format is invalid or duplicates are found.
- */
 async function generateConfigFile(
   configDir: string,
   monoriseOutputDir: string,
@@ -161,11 +154,6 @@ declare module '@monorise/base' {
   return configOutputPath;
 }
 
-/**
- * Generates the processors.ts file.
- * @param monoriseOutputDir The output directory for generated files (.monorise).
- * @returns The path to the generated processors.ts file.
- */
 async function generateProcessorsFile(
   monoriseOutputDir: string,
 ): Promise<string> {
@@ -186,6 +174,75 @@ export const treeHandler = coreFactory.treeProcessor;
   return processorsOutputPath;
 }
 
+async function generateAppFile(
+  monoriseConfig: { customRoutes?: string; configDir: string },
+  projectRoot: string,
+  monoriseOutputDir: string,
+): Promise<string> {
+  const appOutputPath = path.join(monoriseOutputDir, 'app.ts');
+  const customRoutesPath = monoriseConfig.customRoutes;
+
+  if (!customRoutesPath) {
+    throw new Error(
+      "monorise.config.ts must define 'customRoutes' (e.g., './src/app') for app.ts generation.",
+    );
+  }
+
+  const absoluteCustomRoutesPath = path.resolve(projectRoot, customRoutesPath);
+
+  if (
+    !fs.existsSync(absoluteCustomRoutesPath) &&
+    !fs.existsSync(`${absoluteCustomRoutesPath}.ts`) &&
+    !fs.existsSync(`${absoluteCustomRoutesPath}.js`)
+  ) {
+    throw new Error(
+      `Custom routes file not found: '${absoluteCustomRoutesPath}'. Please ensure 'customRoutes' in monorise.config.ts points to a valid file.`,
+    );
+  }
+
+  let routesModule;
+  try {
+    routesModule = await import(absoluteCustomRoutesPath);
+  } catch (e) {
+    throw new Error(
+      `Failed to load custom routes file at '${absoluteCustomRoutesPath}'. Ensure it's a valid JavaScript/TypeScript module. Error: ${e.message}`,
+    );
+  }
+
+  const routesExport = routesModule.default;
+
+  if (
+    !routesExport ||
+    (typeof routesExport !== 'function' && typeof routesExport !== 'object') ||
+    routesExport === null ||
+    !('get' in routesExport && 'post' in routesExport && 'use' in routesExport)
+  ) {
+    throw new Error(
+      `Custom routes file at '${absoluteCustomRoutesPath}' must default export an instance of Hono (or an object with .get, .post, .use methods).`,
+    );
+  }
+
+  let relativePathToRoutes = path.relative(
+    monoriseOutputDir,
+    absoluteCustomRoutesPath,
+  );
+  relativePathToRoutes = relativePathToRoutes.replace(/\.(ts|js|mjs|cjs)$/, '');
+
+  const appContent = `
+import { AppHandler } from '@monorise/core';
+import config from './config';
+import routes from '${relativePathToRoutes}';
+
+export const handler = AppHandler({
+  config,
+  routes
+});
+`;
+  fs.writeFileSync(appOutputPath, appContent);
+  console.log('Successfully generated app.ts!');
+  return appOutputPath;
+}
+
 async function generateFiles(): Promise<string> {
   const configFilePathTS = path.resolve('./monorise.config.ts');
   const configFilePathJS = path.resolve('./monorise.config.js');
@@ -202,14 +259,17 @@ async function generateFiles(): Promise<string> {
   }
 
   const projectRoot = path.dirname(configFilePath);
-  const monoriseConfig = await import(configFilePath);
-  const configDir = path.resolve(monoriseConfig.default.configDir);
+  const monoriseConfigModule = await import(configFilePath);
+  const monoriseConfig = monoriseConfigModule.default;
+
+  const configDir = path.resolve(monoriseConfig.configDir);
   const monoriseOutputDir = path.join(projectRoot, '.monorise');
 
   fs.mkdirSync(monoriseOutputDir, { recursive: true });
 
   await generateConfigFile(configDir, monoriseOutputDir);
   await generateProcessorsFile(monoriseOutputDir);
+  await generateAppFile(monoriseConfig, projectRoot, monoriseOutputDir);
 
   return configDir;
 }
