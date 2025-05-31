@@ -5,6 +5,8 @@ import { QFunction } from './q-function';
 type MonoriseCoreArgs = {
   tableTtl?: string;
   slackWebhook?: string;
+  allowHeaders?: string[];
+  allowOrigins?: string[];
 };
 
 export class MonoriseCore {
@@ -19,16 +21,33 @@ export class MonoriseCore {
 
     this.id = id;
 
-    this.api = new sst.aws.ApiGatewayV2(`${id}-monorise-api`);
+    this.api = new sst.aws.ApiGatewayV2(`${id}-monorise-api`, {
+      cors: {
+        allowMethods: ['*'],
+        allowCredentials: true,
+        allowHeaders: [
+          ...(args?.allowHeaders ? args.allowHeaders : []),
+          'Content-Type',
+          'Authorization',
+        ],
+        allowOrigins: args?.allowOrigins,
+      },
+    });
+
     this.bus = new sst.aws.Bus(`${id}-monorise-bus`);
     this.table = new SingleTable(id, {
       ttl: args?.tableTtl,
       runtime,
     });
 
+    const secretApiKeys = new sst.Secret('API_KEYS', '["secret1", "secret2"]');
+
     this.api.route('ANY /core/{proxy+}', {
       handler: '.monorise/app.handler',
-      link: [this.table, this.bus],
+      link: [this.table, this.bus, secretApiKeys],
+      environment: {
+        API_KEYS: secretApiKeys.value,
+      },
     });
 
     this.dlqTopic = new sst.aws.SnsTopic(`${id}-monorise-dlq-alarm-topic`);
@@ -131,6 +150,13 @@ export class MonoriseCore {
           EVENT.CORE.ENTITY_MUTUAL_PROCESSED.DetailType,
           EVENT.CORE.PREJOIN_RELATIONSHIP_SYNC.DetailType,
         ],
+      },
+    });
+
+    new sst.x.DevCommand('Monorise', {
+      dev: {
+        autostart: true,
+        command: 'npx monorise dev:watch',
       },
     });
   }
