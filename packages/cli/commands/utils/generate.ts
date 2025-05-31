@@ -148,37 +148,17 @@ declare module '@monorise/base' {
   return configOutputPath;
 }
 
-async function generateProcessorsFile(
-  monoriseOutputDir: string,
-): Promise<string> {
-  const processorsOutputPath = path.join(monoriseOutputDir, 'processors.ts');
-  const processorsContent = `
-import CoreFactory from '@monorise/core';
-import config from './config';
-
-const coreFactory = new CoreFactory(config);
-
-export const replicationHandler = coreFactory.replicationProcessor;
-export const mutualHandler = coreFactory.mutualProcessor;
-export const tagHandler = coreFactory.tagProcessor;
-export const treeHandler = coreFactory.treeProcessor;
-`;
-  fs.writeFileSync(processorsOutputPath, processorsContent);
-  console.log('Successfully generated processors.ts!');
-  return processorsOutputPath;
-}
-
-async function generateAppFile(
+async function generateHandleFile(
   monoriseConfig: { customRoutes?: string; configDir: string },
   projectRoot: string,
   monoriseOutputDir: string,
 ): Promise<string> {
-  const appOutputPath = path.join(monoriseOutputDir, 'app.ts');
+  const handleOutputPath = path.join(monoriseOutputDir, 'handle.ts');
   const customRoutesPath = monoriseConfig.customRoutes;
 
   if (!customRoutesPath) {
     throw new Error(
-      "monorise.config.ts must define 'customRoutes' (e.g., './src/app') for app.ts generation.",
+      "monorise.config.ts must define 'customRoutes' (e.g., './src/app') for handle.ts generation.",
     );
   }
 
@@ -222,19 +202,26 @@ async function generateAppFile(
   );
   relativePathToRoutes = relativePathToRoutes.replace(/\.(ts|js|mjs|cjs)$/, '');
 
-  const appContent = `
-import { AppHandler } from '@monorise/core';
+  const combinedContent = `
+import { AppHandler, CoreFactory } from '@monorise/core';
 import config from './config';
 import routes from '${relativePathToRoutes}';
 
-export const handler = AppHandler({
+const coreFactory = new CoreFactory(config);
+
+export const replicationHandler = coreFactory.replicationProcessor;
+export const mutualHandler = coreFactory.mutualProcessor;
+export const tagHandler = coreFactory.tagProcessor;
+export const treeHandler = coreFactory.treeProcessor;
+export const appHandler = AppHandler({
   config,
   routes
 });
 `;
-  fs.writeFileSync(appOutputPath, appContent);
-  console.log('Successfully generated app.ts!');
-  return appOutputPath;
+  fs.writeFileSync(handleOutputPath, combinedContent);
+  console.log('Successfully generated handle.ts!');
+
+  return handleOutputPath;
 }
 
 async function generateFiles(): Promise<string> {
@@ -262,8 +249,7 @@ async function generateFiles(): Promise<string> {
   fs.mkdirSync(monoriseOutputDir, { recursive: true });
 
   await generateConfigFile(configDir, monoriseOutputDir);
-  await generateProcessorsFile(monoriseOutputDir);
-  await generateAppFile(monoriseConfig, projectRoot, monoriseOutputDir);
+  await generateHandleFile(monoriseConfig, projectRoot, monoriseOutputDir);
 
   return configDir;
 }

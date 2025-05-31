@@ -43,7 +43,7 @@ export class MonoriseCore {
     const secretApiKeys = new sst.Secret('API_KEYS', '["secret1", "secret2"]');
 
     this.api.route('ANY /core/{proxy+}', {
-      handler: '.monorise/app.handler',
+      handler: '.monorise/handle.appHandler',
       link: [this.table, this.bus, secretApiKeys],
       environment: {
         API_KEYS: secretApiKeys.value,
@@ -92,7 +92,7 @@ export class MonoriseCore {
      */
     const mutualProcessor = new QFunction('mutual', {
       name: `${$app.stage}-${$app.name}-${id}-monorise-mutual-processor`,
-      handler: '.monorise/processors.mutualHandler',
+      handler: '.monorise/handle.mutualHandler',
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
@@ -103,7 +103,7 @@ export class MonoriseCore {
 
     const tagProcessor = new QFunction('tag', {
       name: `${$app.stage}-${$app.name}-${id}-monorise-tag-processor`,
-      handler: '.monorise/processors.tagHandler',
+      handler: '.monorise/handle.tagHandler',
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
@@ -114,7 +114,7 @@ export class MonoriseCore {
 
     const treeProcessor = new QFunction('tree', {
       name: `${$app.stage}-${$app.name}-${id}-monorise-tree-processor`,
-      handler: '.monorise/processors.treeHandler',
+      handler: '.monorise/handle.treeHandler',
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
