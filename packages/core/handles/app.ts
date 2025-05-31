@@ -7,7 +7,7 @@ import { setupCommonRoutes } from '../controllers/setupRoutes';
 import apiKeyAuth from '../middlewares/api-key-auth';
 import generalErrorHandler from '../middlewares/general-error-handler';
 
-type AppHandlerArgs = {
+type AppHandleArgs = {
   config: {
     EntityConfig: Record<EntityType, ReturnType<typeof createEntityConfig>>;
     AllowedEntityTypes: EntityType[];
@@ -16,7 +16,7 @@ type AppHandlerArgs = {
   routes?: Hono;
 };
 
-const AppHandler = ({ config, routes }: AppHandlerArgs) => {
+const AppHandle = ({ config, routes }: AppHandleArgs) => {
   const app = new Hono().basePath('/core');
 
   app.use(secureHeaders());
@@ -40,4 +40,4 @@ const AppHandler = ({ config, routes }: AppHandlerArgs) => {
   return handle(app);
 };
 
-export default AppHandler;
+export default AppHandle;
