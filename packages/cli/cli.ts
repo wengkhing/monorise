@@ -18,32 +18,22 @@ function kebabToPascal(kebab: string): string {
     .join('');
 }
 
-async function generateConfig(): Promise<string> {
-  const configFilePathTS = path.resolve('./monorise.config.ts');
-  const configFilePathJS = path.resolve('./monorise.config.js');
-
-  let configFilePath: string;
-  if (fs.existsSync(configFilePathTS)) {
-    configFilePath = configFilePathTS;
-  } else if (fs.existsSync(configFilePathJS)) {
-    configFilePath = configFilePathJS;
-  } else {
-    throw new Error(
-      'Neither monorise.config.ts nor monorise.config.js found in the root of the project.',
-    );
-  }
-
-  // Dynamically import the config file
-  const monoriseConfig = await import(configFilePath);
-  const configDir = path.resolve(monoriseConfig.default.configDir);
-
-  const configOutputPath = path.join(configDir, 'index.ts');
-  const initialOutputContent = `
+/**
+ * Generates the config.ts file based on entity definitions.
+ * @param configDir The directory containing the source entity files.
+ * @param monoriseOutputDir The output directory for generated files (.monorise).
+ * @returns The path to the generated config.ts file.
+ * @throws Error if entity name format is invalid or duplicates are found.
+ */
+async function generateConfigFile(
+  configDir: string,
+  monoriseOutputDir: string,
+): Promise<string> {
+  const configOutputPath = path.join(monoriseOutputDir, 'config.ts');
+  const initialConfigContent = `
 export enum Entity {}
 `;
-
-  // Clean up and initialize index.ts file, so that tsconfig resolves import correctly
-  fs.writeFileSync(configOutputPath, initialOutputContent);
+  fs.writeFileSync(configOutputPath, initialConfigContent);
 
   const files = fs
     .readdirSync(configDir)
@@ -52,8 +42,6 @@ export enum Entity {}
   const names = new Set<string>();
   const nameRegex = /^[a-z]+(-[a-z]+)*$/;
   const imports: string[] = [];
-  const importTypes: string[] = [];
-  const arrayElements: string[] = [];
 
   const enumEntries: string[] = [];
   const typeEntries: string[] = [];
@@ -63,12 +51,16 @@ export enum Entity {}
   const allowedEntityEntries: string[] = [];
   const entityWithEmailAuthEntries: string[] = [];
 
+  const relativePathToConfigDir = path.relative(monoriseOutputDir, configDir);
+  const importPathPrefix = relativePathToConfigDir
+    ? `${relativePathToConfigDir}/`
+    : './';
+
   for (const file of files) {
     const fullPath = path.join(configDir, file);
     const module = await import(fullPath);
     const config = module.default;
 
-    // Validate name
     if (!nameRegex.test(config.name)) {
       throw new Error(
         `Invalid name format: ${config.name} in ${file}. Must be kebab-case.`,
@@ -80,14 +72,12 @@ export enum Entity {}
     }
     names.add(config.name);
 
-    // Generate import and array element
     const fileName = file.replace(/\.ts$/, '');
     const variableName = kebabToCamel(fileName);
-    imports.push(`import ${variableName} from './${fileName}';`);
-    importTypes.push(`import type ${variableName} from './${fileName}';`);
-    arrayElements.push(variableName);
+    imports.push(
+      `import ${variableName} from '${importPathPrefix}${fileName}';`,
+    );
 
-    // Generate enum entry
     const enumKey = config.name.toUpperCase().replace(/-/g, '_');
     enumEntries.push(`${enumKey} = '${config.name}'`);
     typeEntries.push(
@@ -97,7 +87,6 @@ export enum Entity {}
       `[Entity.${enumKey}]: ${kebabToPascal(config.name)}Type;`,
     );
 
-    // Generate config entry
     configEntries.push(`[Entity.${enumKey}]: ${kebabToCamel(config.name)},`);
     schemaEntries.push(
       `[Entity.${enumKey}]: ${kebabToCamel(config.name)}.finalSchema,`,
@@ -110,7 +99,7 @@ export enum Entity {}
     }
   }
 
-  const outputContent = `
+  const configOutputContent = `
 import type { z } from 'zod';
 ${imports.join('\n')}
 
@@ -167,8 +156,61 @@ declare module '@monorise/base' {
 }
 `;
 
-  fs.writeFileSync(configOutputPath, outputContent);
-  console.log('Successfully generated entity configurations and enum!');
+  fs.writeFileSync(configOutputPath, configOutputContent);
+  console.log('Successfully generated config.ts!');
+  return configOutputPath;
+}
+
+/**
+ * Generates the processors.ts file.
+ * @param monoriseOutputDir The output directory for generated files (.monorise).
+ * @returns The path to the generated processors.ts file.
+ */
+async function generateProcessorsFile(
+  monoriseOutputDir: string,
+): Promise<string> {
+  const processorsOutputPath = path.join(monoriseOutputDir, 'processors.ts');
+  const processorsContent = `
+import CoreFactory from '@monorise/core';
+import config from './config';
+
+const coreFactory = new CoreFactory(config);
+
+export const replicationHandler = coreFactory.replicationProcessor;
+export const mutualHandler = coreFactory.mutualProcessor;
+export const tagHandler = coreFactory.tagProcessor;
+export const treeHandler = coreFactory.treeProcessor;
+`;
+  fs.writeFileSync(processorsOutputPath, processorsContent);
+  console.log('Successfully generated processors.ts!');
+  return processorsOutputPath;
+}
+
+async function generateFiles(): Promise<string> {
+  const configFilePathTS = path.resolve('./monorise.config.ts');
+  const configFilePathJS = path.resolve('./monorise.config.js');
+
+  let configFilePath: string;
+  if (fs.existsSync(configFilePathTS)) {
+    configFilePath = configFilePathTS;
+  } else if (fs.existsSync(configFilePathJS)) {
+    configFilePath = configFilePathJS;
+  } else {
+    throw new Error(
+      'Neither monorise.config.ts nor monorise.config.js found in the root of the project.',
+    );
+  }
+
+  const projectRoot = path.dirname(configFilePath);
+  const monoriseConfig = await import(configFilePath);
+  const configDir = path.resolve(monoriseConfig.default.configDir);
+  const monoriseOutputDir = path.join(projectRoot, '.monorise');
+
+  fs.mkdirSync(monoriseOutputDir, { recursive: true });
+
+  await generateConfigFile(configDir, monoriseOutputDir);
+  await generateProcessorsFile(monoriseOutputDir);
+
   return configDir;
 }
 
@@ -179,7 +221,7 @@ async function main() {
   if (command === 'dev') {
     let configDir: string | undefined;
     try {
-      configDir = await generateConfig();
+      configDir = await generateFiles();
     } catch (err) {
       console.error('Generation failed:', err);
       process.exit(1);
@@ -225,7 +267,7 @@ async function main() {
       watcher.on('add', async (filePath) => {
         console.log(`File ${filePath} has been added. Regenerating...`);
         try {
-          await generateConfig();
+          await generateFiles();
         } catch (err) {
           console.error('Regeneration failed:', err);
         }
@@ -234,7 +276,7 @@ async function main() {
       watcher.on('change', async (filePath) => {
         console.log(`File ${filePath} has been changed. Regenerating...`);
         try {
-          await generateConfig();
+          await generateFiles();
         } catch (err) {
           console.error('Regeneration failed:', err);
         }
@@ -243,13 +285,12 @@ async function main() {
       watcher.on('unlink', async (filePath) => {
         console.log(`File ${filePath} has been removed. Regenerating...`);
         try {
-          await generateConfig();
+          await generateFiles();
         } catch (err) {
           console.error('Regeneration failed:', err);
         }
       });
 
-      // sst dev is started only once, after initial generation
       runSSTDev();
 
       process.on('SIGINT', () => {
@@ -271,15 +312,13 @@ async function main() {
     }
   } else if (command === 'build') {
     try {
-      await generateConfig();
+      await generateFiles();
 
-      // Run sst build after generating files
       console.log('Starting sst build...');
       const sstBuildProcess = spawn('npx', ['sst', 'build'], {
         stdio: 'inherit',
       });
 
-      // Wait for sst build to complete
       await new Promise<void>((resolve, reject) => {
         sstBuildProcess.on('close', (code) => {
           if (code === 0) {
