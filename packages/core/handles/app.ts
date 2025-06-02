@@ -6,38 +6,34 @@ import { secureHeaders } from 'hono/secure-headers';
 import { setupCommonRoutes } from '../controllers/setupRoutes';
 import apiKeyAuth from '../middlewares/api-key-auth';
 import generalErrorHandler from '../middlewares/general-error-handler';
+import type { DependencyContainer } from '../services/DependencyContainer';
 
 type AppHandleArgs = {
-  config: {
-    EntityConfig: Record<EntityType, ReturnType<typeof createEntityConfig>>;
-    AllowedEntityTypes: EntityType[];
-    EmailAuthEnabledEntities: EntityType[];
-  };
   routes?: Hono;
 };
 
-const AppHandle = ({ config, routes }: AppHandleArgs) => {
-  const app = new Hono().basePath('/core');
+export const appHandle =
+  (container: DependencyContainer) =>
+  ({ routes }: AppHandleArgs) => {
+    const app = new Hono().basePath('/core');
 
-  app.use(secureHeaders());
-  app.use(
-    cors({
-      allowHeaders: ['Content-Type'],
-      credentials: true,
-      origin: JSON.parse(process.env.ALLOWED_ORIGIN as string) as string[],
-    }),
-  );
-  app.use(apiKeyAuth);
+    app.use(secureHeaders());
+    app.use(
+      cors({
+        allowHeaders: ['Content-Type'],
+        credentials: true,
+        origin: JSON.parse(process.env.ALLOWED_ORIGIN as string) as string[],
+      }),
+    );
+    app.use(apiKeyAuth);
 
-  if (routes) {
-    app.route('/app', routes);
-  }
+    if (routes) {
+      app.route('/app', routes);
+    }
 
-  app.route('/', setupCommonRoutes(config));
+    app.route('/', setupCommonRoutes(container));
 
-  app.use(generalErrorHandler());
+    app.use(generalErrorHandler());
 
-  return handle(app);
-};
-
-export default AppHandle;
+    return handle(app);
+  };

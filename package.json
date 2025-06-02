@@ -2,8 +2,6 @@
   "name": "monorise",
   "version": "0.0.0",
   "description": "",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "packageManager": "npm@10.9.2",
   "scripts": {
     "build": "npm run clear-dist && turbo run build",
@@ -17,12 +15,8 @@
     "start:test-env": "./scripts/start-test-env.sh",
     "test": "npm -w @monorise/core run test"
   },
-  "files": [
-    "dist"
-  ],
-  "workspaces": [
-    "packages/*"
-  ],
+  "files": ["dist"],
+  "workspaces": ["packages/*"],
   "keywords": [],
   "author": "monorise",
   "license": "MIT",

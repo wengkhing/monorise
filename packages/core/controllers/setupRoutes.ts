@@ -2,15 +2,9 @@ import type { Entity as EntityType, createEntityConfig } from '@monorise/base';
 import { Hono } from 'hono';
 import { entityTypeCheck } from '../middlewares/entity-type-check';
 import { mutualTypeCheck } from '../middlewares/mutual-type-check';
-import { DependencyContainer } from '../services/DependencyContainer';
+import type { DependencyContainer } from '../services/DependencyContainer';
 
-export const setupCommonRoutes = (config: {
-  EntityConfig: Record<EntityType, ReturnType<typeof createEntityConfig>>;
-  AllowedEntityTypes: EntityType[];
-  EmailAuthEnabledEntities: EntityType[];
-}): Hono => {
-  const container = new DependencyContainer(config);
-
+export const setupCommonRoutes = (container: DependencyContainer): Hono => {
   const app = new Hono();
   /*
    * Mutual endpoint
