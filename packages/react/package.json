@@ -1,9 +1,16 @@
 {
   "name": "@monorise/react",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
   "directories": {
     "lib": "lib"
   },
