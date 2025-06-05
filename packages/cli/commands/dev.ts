@@ -12,9 +12,6 @@ async function runDevCommand() {
       const fileName = path.basename(watchedPath);
       return (
         fileName === 'index.ts' || // Old name, still ignore in case it exists
-        fileName === 'config.ts' || // Generated config file
-        fileName === 'processors.ts' || // Generated processors file
-        fileName === 'app.ts' || // Generated app file
         fileName.startsWith('.') ||
         watchedPath.endsWith('.js') ||
         watchedPath.endsWith('.jsx') ||
@@ -24,26 +21,6 @@ async function runDevCommand() {
     persistent: true,
     ignoreInitial: true,
   });
-
-  let sstDevProcess: ReturnType<typeof spawn> | null = null;
-
-  const runSSTDev = () => {
-    if (sstDevProcess) {
-      console.log('Terminating existing sst dev process...');
-      sstDevProcess.kill('SIGTERM');
-      sstDevProcess = null;
-    }
-    console.log('Starting sst dev...');
-    sstDevProcess = spawn('npx', ['sst', 'dev'], { stdio: 'inherit' });
-    sstDevProcess.on('close', (code) => {
-      console.log(`sst dev process exited with code ${code}`);
-      sstDevProcess = null;
-    });
-    sstDevProcess.on('error', (err) => {
-      console.error('Failed to start sst dev process:', err);
-      sstDevProcess = null;
-    });
-  };
 
   watcher.on('add', async (filePath) => {
     console.log(`File ${filePath} has been added. Regenerating...`);
@@ -72,22 +49,14 @@ async function runDevCommand() {
     }
   });
 
-  runSSTDev();
-
   process.on('SIGINT', () => {
     console.log('Monorise dev terminated. Closing watcher and sst dev...');
     watcher.close();
-    if (sstDevProcess) {
-      sstDevProcess.kill('SIGTERM');
-    }
     process.exit(0);
   });
   process.on('SIGTERM', () => {
     console.log('Monorise dev terminated. Closing watcher and sst dev...');
     watcher.close();
-    if (sstDevProcess) {
-      sstDevProcess.kill('SIGTERM');
-    }
     process.exit(0);
   });
 }
