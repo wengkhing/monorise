@@ -19,6 +19,13 @@ export class MonoriseCore {
   constructor(id: string, args?: MonoriseCoreArgs) {
     const runtime: sst.aws.FunctionArgs['runtime'] = 'nodejs22.x';
 
+    new sst.x.DevCommand('Monorise', {
+      dev: {
+        autostart: true,
+        command: 'npx monorise dev',
+      },
+    });
+
     this.id = id;
 
     this.api = new sst.aws.ApiGatewayV2(`${id}-monorise-api`, {
@@ -91,7 +98,7 @@ export class MonoriseCore {
      * Event Processors
      */
     const mutualProcessor = new QFunction('mutual', {
-      name: `${$app.stage}-${$app.name}-${id}-monorise-mutual-processor`,
+      name: `${$app.stage}-${$app.name}-${id}-mutual-processor`,
       handler: '.monorise/handle.mutualHandler',
       memory: '512 MB',
       timeout: '30 seconds',
@@ -102,7 +109,7 @@ export class MonoriseCore {
     });
 
     const tagProcessor = new QFunction('tag', {
-      name: `${$app.stage}-${$app.name}-${id}-monorise-tag-processor`,
+      name: `${$app.stage}-${$app.name}-${id}-tag-processor`,
       handler: '.monorise/handle.tagHandler',
       memory: '512 MB',
       timeout: '30 seconds',
@@ -113,7 +120,7 @@ export class MonoriseCore {
     });
 
     const treeProcessor = new QFunction('tree', {
-      name: `${$app.stage}-${$app.name}-${id}-monorise-tree-processor`,
+      name: `${$app.stage}-${$app.name}-${id}-tree-processor`,
       handler: '.monorise/handle.treeHandler',
       memory: '512 MB',
       timeout: '30 seconds',
@@ -150,13 +157,6 @@ export class MonoriseCore {
           EVENT.CORE.ENTITY_MUTUAL_PROCESSED.DetailType,
           EVENT.CORE.PREJOIN_RELATIONSHIP_SYNC.DetailType,
         ],
-      },
-    });
-
-    new sst.x.DevCommand('Monorise', {
-      dev: {
-        autostart: true,
-        command: 'npx monorise dev:watch',
       },
     });
   }

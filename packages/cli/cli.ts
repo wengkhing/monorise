@@ -154,93 +154,90 @@ declare module '@monorise/base' {
   return configOutputPath;
 }
 
-async function generateProcessorsFile(
-  monoriseOutputDir: string,
-): Promise<string> {
-  const processorsOutputPath = path.join(monoriseOutputDir, 'processors.ts');
-  const processorsContent = `
-import CoreFactory from '@monorise/core';
-import config from './config';
-
-const coreFactory = new CoreFactory(config);
-
-export const replicationHandler = coreFactory.replicationProcessor;
-export const mutualHandler = coreFactory.mutualProcessor;
-export const tagHandler = coreFactory.tagProcessor;
-export const treeHandler = coreFactory.treeProcessor;
-`;
-  fs.writeFileSync(processorsOutputPath, processorsContent);
-  console.log('Successfully generated processors.ts!');
-  return processorsOutputPath;
-}
-
-async function generateAppFile(
+async function generateHandleFile(
   monoriseConfig: { customRoutes?: string; configDir: string },
   projectRoot: string,
   monoriseOutputDir: string,
 ): Promise<string> {
-  const appOutputPath = path.join(monoriseOutputDir, 'app.ts');
+  const handleOutputPath = path.join(monoriseOutputDir, 'handle.ts');
   const customRoutesPath = monoriseConfig.customRoutes;
 
-  if (!customRoutesPath) {
-    throw new Error(
-      "monorise.config.ts must define 'customRoutes' (e.g., './src/app') for app.ts generation.",
+  let routesImportLine = '';
+  let appHandlerPayload = '{}'; // Default to an empty object for appHandler if no custom routes
+
+  if (customRoutesPath) {
+    const absoluteCustomRoutesPath = path.resolve(
+      projectRoot,
+      customRoutesPath,
     );
-  }
 
-  const absoluteCustomRoutesPath = path.resolve(projectRoot, customRoutesPath);
+    if (
+      !fs.existsSync(absoluteCustomRoutesPath) &&
+      !fs.existsSync(`${absoluteCustomRoutesPath}.ts`) &&
+      !fs.existsSync(`${absoluteCustomRoutesPath}.js`)
+    ) {
+      throw new Error(
+        `Custom routes file not found: '${absoluteCustomRoutesPath}'. Please ensure 'customRoutes' in monorise.config.ts points to a valid file.`,
+      );
+    }
 
-  if (
-    !fs.existsSync(absoluteCustomRoutesPath) &&
-    !fs.existsSync(`${absoluteCustomRoutesPath}.ts`) &&
-    !fs.existsSync(`${absoluteCustomRoutesPath}.js`)
-  ) {
-    throw new Error(
-      `Custom routes file not found: '${absoluteCustomRoutesPath}'. Please ensure 'customRoutes' in monorise.config.ts points to a valid file.`,
+    let routesModule;
+    try {
+      routesModule = await import(absoluteCustomRoutesPath);
+    } catch (e: any) {
+      throw new Error(
+        `Failed to load custom routes file at '${absoluteCustomRoutesPath}'. Ensure it's a valid JavaScript/TypeScript module. Error: ${e.message}`,
+      );
+    }
+
+    const routesExport = routesModule.default;
+
+    if (
+      !routesExport ||
+      (typeof routesExport !== 'function' &&
+        typeof routesExport !== 'object') ||
+      routesExport === null ||
+      !(
+        'get' in routesExport &&
+        'post' in routesExport &&
+        'use' in routesExport
+      )
+    ) {
+      throw new Error(
+        `Custom routes file at '${absoluteCustomRoutesPath}' must default export an instance of Hono (or an object with .get, .post, .use methods).`,
+      );
+    }
+
+    let relativePathToRoutes = path.relative(
+      monoriseOutputDir,
+      absoluteCustomRoutesPath,
     );
-  }
-
-  let routesModule;
-  try {
-    routesModule = await import(absoluteCustomRoutesPath);
-  } catch (e: any) {
-    throw new Error(
-      `Failed to load custom routes file at '${absoluteCustomRoutesPath}'. Ensure it's a valid JavaScript/TypeScript module. Error: ${e.message}`,
+    relativePathToRoutes = relativePathToRoutes.replace(
+      /\.(ts|js|mjs|cjs)$/,
+      '',
     );
+
+    // If custom routes are provided, include the import statement and pass 'routes' to appHandler
+    routesImportLine = `import routes from '${relativePathToRoutes}';`;
+    appHandlerPayload = '{ routes }';
   }
+  // If customRoutesPath is not provided, routesImportLine remains empty and appHandlerPayload remains `{}`
 
-  const routesExport = routesModule.default;
-
-  if (
-    !routesExport ||
-    (typeof routesExport !== 'function' && typeof routesExport !== 'object') ||
-    routesExport === null ||
-    !('get' in routesExport && 'post' in routesExport && 'use' in routesExport)
-  ) {
-    throw new Error(
-      `Custom routes file at '${absoluteCustomRoutesPath}' must default export an instance of Hono (or an object with .get, .post, .use methods).`,
-    );
-  }
-
-  let relativePathToRoutes = path.relative(
-    monoriseOutputDir,
-    absoluteCustomRoutesPath,
-  );
-  relativePathToRoutes = relativePathToRoutes.replace(/\.(ts|js|mjs|cjs)$/, '');
-
-  const appContent = `
-import { AppHandler } from '@monorise/core';
+  const combinedContent = `
+import { AppHandler, CoreFactory } from '@monorise/core';
 import config from './config';
-import routes from '${relativePathToRoutes}';
+${routesImportLine ? `${routesImportLine}\n` : ''}const coreFactory = new CoreFactory(config);
 
-export const handler = AppHandler({
-  config,
-  routes
-});
+export const replicationHandler = coreFactory.replicationProcessor;
+export const mutualHandler = coreFactory.mutualProcessor;
+export const tagHandler = coreFactory.tagProcessor;
+export const treeHandler = coreFactory.prejoinProcessor;
+export const appHandler = coreFactory.appHandler(${appHandlerPayload});
 `;
-  fs.writeFileSync(appOutputPath, appContent);
-  console.log('Successfully generated app.ts!');
-  return appOutputPath;
+  fs.writeFileSync(handleOutputPath, combinedContent);
+  console.log('Successfully generated handle.ts!');
+
+  return handleOutputPath;
 }
 
 async function generateFiles(): Promise<string> {
@@ -268,17 +265,104 @@ async function generateFiles(): Promise<string> {
   fs.mkdirSync(monoriseOutputDir, { recursive: true });
 
   await generateConfigFile(configDir, monoriseOutputDir);
-  await generateProcessorsFile(monoriseOutputDir);
-  await generateAppFile(monoriseConfig, projectRoot, monoriseOutputDir);
+  await generateHandleFile(monoriseConfig, projectRoot, monoriseOutputDir);
 
   return configDir;
 }
 
-/**
- * Handles the 'dev' command logic.
- * Generates files, sets up file watching, and starts sst dev.
- * @param configDir The directory containing source configuration files to watch.
- */
+async function runInitCommand() {
+  const projectRoot = process.cwd();
+  console.log(`Initializing Monorise project in ${projectRoot}...`);
+
+  // 1. Create monorise.config.ts
+  const monoriseConfigTsPath = path.join(projectRoot, 'monorise.config.ts');
+  const monoriseConfigContent = `
+const config = {
+  configDir: './monorise/entities',
+  // custom route file should export default an Hono object.
+  // customRoutes: './path/to/custom/routes.ts'
+};
+
+export default config;
+`;
+  if (!fs.existsSync(monoriseConfigTsPath)) {
+    fs.writeFileSync(monoriseConfigTsPath, monoriseConfigContent.trimStart());
+    console.log(`Created ${path.relative(projectRoot, monoriseConfigTsPath)}`);
+  } else {
+    console.log(
+      `${path.relative(projectRoot, monoriseConfigTsPath)} already exists. Skipping.`,
+    );
+  }
+
+  // 2. Create ./monorise/entities/user.ts
+  const monoriseEntitiesDir = path.join(projectRoot, 'monorise', 'entities');
+  fs.mkdirSync(monoriseEntitiesDir, { recursive: true });
+
+  const userEntityTsPath = path.join(monoriseEntitiesDir, 'user.ts');
+  const userEntityContent = `
+import { createEntityConfig } from '@monorise/base';
+import { z } from 'zod';
+
+const baseSchema = z
+  .object({
+    displayName: z
+      .string()
+      .min(1, 'Please provide a name for this user account'),
+    firstName: z.string().min(1, 'Please provide first name'),
+    lastName: z.string().min(1, 'Please provide last name'),
+    jobTitle: z.string(),
+  })
+  .partial();
+
+const config = createEntityConfig({
+  name: 'user',
+  baseSchema,
+});
+
+export default config;
+`;
+  if (!fs.existsSync(userEntityTsPath)) {
+    fs.writeFileSync(userEntityTsPath, userEntityContent.trimStart());
+    console.log(`Created ${path.relative(projectRoot, userEntityTsPath)}`);
+  } else {
+    console.log(
+      `${path.relative(projectRoot, userEntityTsPath)} already exists. Skipping.`,
+    );
+  }
+
+  // 3. Update package.json
+  const packageJsonPath = path.join(projectRoot, 'package.json');
+  if (fs.existsSync(packageJsonPath)) {
+    try {
+      const packageJsonContent = fs.readFileSync(packageJsonPath, 'utf8');
+      const packageJson = JSON.parse(packageJsonContent);
+
+      if (packageJson.type !== 'module') {
+        packageJson.type = 'module';
+        fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+        console.log(
+          `Updated 'type' to 'module' in ${path.relative(projectRoot, packageJsonPath)}`,
+        );
+      } else {
+        console.log(
+          `'type: "module"' already set in ${path.relative(projectRoot, packageJsonPath)}. Skipping.`,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Error reading or parsing ${path.relative(projectRoot, packageJsonPath)}:`,
+        error,
+      );
+    }
+  } else {
+    console.warn(
+      `Warning: ${path.relative(projectRoot, packageJsonPath)} not found. Cannot update 'type'.`,
+    );
+  }
+
+  console.log('Monorise initialization complete!');
+}
+
 async function runDevCommand(configDir: string) {
   console.log(`Watching for changes in ${configDir}...`);
   const watcher = chokidar.watch(configDir, {
@@ -298,26 +382,6 @@ async function runDevCommand(configDir: string) {
     persistent: true,
     ignoreInitial: true,
   });
-
-  let sstDevProcess: ReturnType<typeof spawn> | null = null;
-
-  const runSSTDev = () => {
-    if (sstDevProcess) {
-      console.log('Terminating existing sst dev process...');
-      sstDevProcess.kill('SIGTERM');
-      sstDevProcess = null;
-    }
-    console.log('Starting sst dev...');
-    sstDevProcess = spawn('npx', ['sst', 'dev'], { stdio: 'inherit' });
-    sstDevProcess.on('close', (code) => {
-      console.log(`sst dev process exited with code ${code}`);
-      sstDevProcess = null;
-    });
-    sstDevProcess.on('error', (err) => {
-      console.error('Failed to start sst dev process:', err);
-      sstDevProcess = null;
-    });
-  };
 
   watcher.on('add', async (filePath) => {
     console.log(`File ${filePath} has been added. Regenerating...`);
@@ -346,50 +410,21 @@ async function runDevCommand(configDir: string) {
     }
   });
 
-  runSSTDev();
-
   process.on('SIGINT', () => {
     console.log('Monorise dev terminated. Closing watcher and sst dev...');
     watcher.close();
-    if (sstDevProcess) {
-      sstDevProcess.kill('SIGTERM');
-    }
     process.exit(0);
   });
   process.on('SIGTERM', () => {
     console.log('Monorise dev terminated. Closing watcher and sst dev...');
     watcher.close();
-    if (sstDevProcess) {
-      sstDevProcess.kill('SIGTERM');
-    }
     process.exit(0);
   });
 }
 
-/**
- * Handles the 'build' command logic.
- * Runs sst build after file generation.
- */
 async function runBuildCommand() {
   console.log('Starting sst build...');
   await generateFiles();
-  const sstBuildProcess = spawn('npx', ['sst', 'build'], {
-    stdio: 'inherit',
-  });
-
-  await new Promise<void>((resolve, reject) => {
-    sstBuildProcess.on('close', (code) => {
-      if (code === 0) {
-        console.log('sst build completed successfully.');
-        resolve();
-      } else {
-        reject(new Error(`sst build exited with code ${code}.`));
-      }
-    });
-    sstBuildProcess.on('error', (err) => {
-      reject(new Error(`Failed to start sst build process: ${err.message}.`));
-    });
-  });
 }
 
 async function main() {
@@ -402,8 +437,10 @@ async function main() {
       await runDevCommand(configDir);
     } else if (command === 'build') {
       await runBuildCommand();
+    } else if (command === 'init') {
+      await runInitCommand();
     } else {
-      console.error('Unknown command. Usage: monorise [dev|build]');
+      console.error('Unknown command. Usage: monorise [dev|build|init]');
       process.exit(1);
     }
   } catch (err) {

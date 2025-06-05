@@ -1,4 +1,3 @@
-import type { Entity as EntityType, createEntityConfig } from '@monorise/base';
 import { Hono } from 'hono';
 import { handle } from 'hono/aws-lambda';
 import { cors } from 'hono/cors';
