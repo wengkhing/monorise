@@ -1,5 +1,5 @@
-import type { Entity, MonoriseEntityConfig } from '../types/monorise.type';
 import { z } from 'zod/v4';
+import type { Entity, MonoriseEntityConfig } from '../types/monorise.type';
 
 function makeSchema<
   T extends Entity,
@@ -14,8 +14,8 @@ function makeSchema<
 
   const finalSchema = z.object({
     ...baseSchema.shape,
-    ...createSchema?.shape,
-    ...mutualSchema?.shape,
+    ...(createSchema ? createSchema.shape : {}),
+    ...(mutualSchema ? mutualSchema.shape : {}),
   });
 
   return finalSchema;
