@@ -3,7 +3,9 @@ import httpStatus from 'http-status';
 
 const factory = createFactory();
 
-const API_KEYS: string[] = JSON.parse(process.env.API_KEYS as string);
+const API_KEYS: string[] = process.env.API_KEYS
+  ? JSON.parse(process.env.API_KEYS as string)
+  : [];
 
 const apiKeyAuth = factory.createMiddleware(async (c, next) => {
   const xApiKey = c.req.header('x-api-key');

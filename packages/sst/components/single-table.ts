@@ -57,13 +57,13 @@ export class SingleTable {
     });
 
     const environment = {
-      DDB_TABLE: this.table.name,
+      CORE_TABLE: this.table.name,
     };
 
     this.table.subscribe(
       `${id}-core-replicator`,
       {
-        handler: '.monorise/processors.replicationHandler',
+        handler: '.monorise/handle.replicationHandler',
         timeout: '60 seconds',
         memory: '512 MB',
         runtime: args?.runtime,

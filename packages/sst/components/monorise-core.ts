@@ -51,9 +51,11 @@ export class MonoriseCore {
 
     this.api.route('ANY /core/{proxy+}', {
       handler: '.monorise/handle.appHandler',
-      link: [this.table, this.bus, secretApiKeys],
+      link: [this.table.table, this.bus, secretApiKeys],
       environment: {
         API_KEYS: secretApiKeys.value,
+        CORE_TABLE: this.table.table.name,
+        CORE_EVENT_BUS: this.bus.name,
       },
     });
 

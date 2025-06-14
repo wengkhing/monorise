@@ -11,7 +11,7 @@ type AppHandleArgs = {
   routes?: Hono;
 };
 
-export const appHandle =
+export const appHandler =
   (container: DependencyContainer) =>
   ({ routes }: AppHandleArgs) => {
     const app = new Hono().basePath('/core');
@@ -21,7 +21,9 @@ export const appHandle =
       cors({
         allowHeaders: ['Content-Type'],
         credentials: true,
-        origin: JSON.parse(process.env.ALLOWED_ORIGIN as string) as string[],
+        origin: process.env.ALLOWED_ORIGIN
+          ? (JSON.parse(process.env.ALLOWED_ORIGIN as string) as string[])
+          : [],
       }),
     );
     app.use(apiKeyAuth);

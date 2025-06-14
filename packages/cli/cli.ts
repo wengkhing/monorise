@@ -224,7 +224,7 @@ async function generateHandleFile(
   // If customRoutesPath is not provided, routesImportLine remains empty and appHandlerPayload remains `{}`
 
   const combinedContent = `
-import { AppHandler, CoreFactory } from '@monorise/core';
+import CoreFactory from '@monorise/core';
 import config from './config';
 ${routesImportLine ? `${routesImportLine}\n` : ''}const coreFactory = new CoreFactory(config);
 
