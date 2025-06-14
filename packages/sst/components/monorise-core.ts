@@ -14,7 +14,7 @@ export class MonoriseCore {
   public readonly api: sst.aws.ApiGatewayV2;
   public readonly bus: sst.aws.Bus;
   public readonly table: SingleTable;
-  public readonly dlqTopic: sst.aws.SnsTopic;
+  public readonly alarmTopic: sst.aws.SnsTopic;
 
   constructor(id: string, args?: MonoriseCoreArgs) {
     const runtime: sst.aws.FunctionArgs['runtime'] = 'nodejs22.x';
@@ -57,8 +57,8 @@ export class MonoriseCore {
       },
     });
 
-    this.dlqTopic = new sst.aws.SnsTopic(`${id}-monorise-dlq-alarm-topic`);
-    this.dlqTopic.subscribe('send-cloudwatch-alarm', {
+    this.alarmTopic = new sst.aws.SnsTopic(`${id}-monorise-dlq-alarm-topic`);
+    this.alarmTopic.subscribe('send-cloudwatch-alarm', {
       name: `${$app.stage}-${id}-monorise-send-cloudwatch-alarm`,
       handler:
         'node_modules/monorise/sst/function/send-cloudwatch-alarm.handler',
@@ -103,7 +103,7 @@ export class MonoriseCore {
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
-      dlqTopic: this.dlqTopic,
+      alarmTopic: this.alarmTopic,
       runtime,
       environment,
     });
@@ -114,7 +114,7 @@ export class MonoriseCore {
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
-      dlqTopic: this.dlqTopic,
+      alarmTopic: this.alarmTopic,
       runtime,
       environment,
     });
@@ -125,7 +125,7 @@ export class MonoriseCore {
       memory: '512 MB',
       timeout: '30 seconds',
       visibilityTimeout: '30 seconds',
-      dlqTopic: this.dlqTopic,
+      alarmTopic: this.alarmTopic,
       runtime,
       environment,
     });

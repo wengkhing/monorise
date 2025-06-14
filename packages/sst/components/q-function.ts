@@ -1,8 +1,11 @@
+import type { DurationMinutes } from '../.sst/platform/src/components/duration';
+import type { Input } from '../.sst/platform/src/components/input';
+
 interface QFunctionArgs extends sst.aws.FunctionArgs {
   visibilityTimeout?: sst.aws.QueueArgs['visibilityTimeout'];
-  maximumBatchingWindowInSeconds?: aws.lambda.EventSourceMappingArgs['maximumBatchingWindowInSeconds'];
+  maxBatchingWindow?: Input<DurationMinutes>;
   batchSize?: number;
-  dlqTopic?: sst.aws.SnsTopic;
+  alarmTopic?: sst.aws.SnsTopic;
 }
 
 export class QFunction {
@@ -16,15 +19,11 @@ export class QFunction {
 
     const {
       visibilityTimeout,
-      maximumBatchingWindowInSeconds,
+      maxBatchingWindow,
       batchSize,
-      dlqTopic,
+      alarmTopic,
       ...functionArgs
     } = args;
-
-    this.function = new sst.aws.Function(`${id}-processor`, {
-      ...functionArgs,
-    });
 
     this.dlq = new sst.aws.Queue(`${id}-queue-dlq`);
 
@@ -33,17 +32,20 @@ export class QFunction {
       dlq: this.dlq.arn,
     });
 
-    this.queue.subscribe(`${id}-processor`, {
-      transform: {
-        eventSourceMapping: {
-          bisectBatchOnFunctionError: true,
-          maximumBatchingWindowInSeconds,
-          batchSize,
-        },
+    this.function = new sst.aws.Function(`${id}-processor`, {
+      ...functionArgs,
+      link: [this.queue],
+    });
+
+    this.queue.subscribe(this.function.arn, {
+      batch: {
+        partialResponses: true,
+        window: maxBatchingWindow,
+        size: batchSize,
       },
     });
 
-    if (dlqTopic) {
+    if (alarmTopic) {
       const dlqMessageAlarm = new aws.cloudwatch.MetricAlarm(
         `${id}-dlq-message-alarm`,
         {
@@ -61,7 +63,7 @@ export class QFunction {
           alarmDescription:
             'Alarm when there is at least one message in the DLQ.',
           // Actions to take when the alarm changes to ALARM state.
-          alarmActions: [dlqTopic.arn],
+          alarmActions: [alarmTopic.arn],
           // Actions to take when the alarm changes to OK state.
           // okActions: [alarmSnsTopic.arn],
         },

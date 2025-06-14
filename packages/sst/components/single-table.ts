@@ -68,6 +68,7 @@ export class SingleTable {
         memory: '512 MB',
         runtime: args?.runtime,
         environment,
+        link: [this.table, this.dlq],
       },
       {
         transform: {
