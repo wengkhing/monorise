@@ -2,10 +2,10 @@
   "name": "monorise",
   "version": "0.0.0",
   "description": "",
-  "packageManager": "npm@10.9.2",
   "scripts": {
     "build": "npm run clear-dist && turbo run build -- --force && chmod +x packages/cli/dist/cli.js",
     "dev": "npm run clear-dist && turbo run dev",
+    "doc": "npm -w www run start",
     "clear-dist": "./scripts/clear.sh",
     "release": "npm run build && npm run changeset -- publish",
     "version": "npm run changeset -- version",
@@ -16,7 +16,7 @@
     "test": "npm -w @monorise/core run test"
   },
   "files": ["dist"],
-  "workspaces": ["packages/*"],
+  "workspaces": ["packages/*", "www"],
   "keywords": [],
   "author": "monorise",
   "license": "MIT",
